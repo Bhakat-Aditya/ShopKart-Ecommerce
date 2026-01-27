@@ -37,6 +37,11 @@ const productSchema = new mongoose.Schema({
         required: [true, "Please add stock count"],
         default: 0
     },
+    mrp: {
+        type: Number,
+        required: true,
+        default: 0
+    },
     rating: {
         type: Number,
         required: true,

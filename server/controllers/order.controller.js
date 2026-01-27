@@ -1,4 +1,5 @@
 import Order from '../models/order.model.js';
+import Product from '../models/product.model.js'; // <--- 1. IMPORT THIS
 
 export const addOrderItems = async (req, res) => {
     const {
@@ -31,10 +32,23 @@ export const addOrderItems = async (req, res) => {
         });
 
         const createdOrder = await order.save();
+
+        // --- 2. NEW LOGIC: DECREMENT STOCK ---
+        // Loop through each item and update the Product database
+        for (const item of orderItems) {
+            const product = await Product.findById(item._id);
+            if (product) {
+                product.countInStock = product.countInStock - item.qty;
+                await product.save();
+            }
+        }
+        // -------------------------------------
+
         res.status(201).json(createdOrder);
     }
 };
 
+// ... keep getOrderById and getMyOrders as they are ...
 export const getOrderById = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id).populate('user', 'name email');
@@ -48,6 +62,7 @@ export const getOrderById = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
 export const getMyOrders = async (req, res) => {
     try {
         const orders = await Order.find({ user: req.user._id });

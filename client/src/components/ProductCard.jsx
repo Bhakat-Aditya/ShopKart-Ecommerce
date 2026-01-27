@@ -1,53 +1,75 @@
 import { Link } from "react-router-dom";
-import { Star, ShoppingCart } from "lucide-react";
+import { Star } from "lucide-react";
 
 const ProductCard = ({ product }) => {
+  // Calculate discount percentage if MRP exists
+  const discount =
+    product.mrp > product.price
+      ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+      : 0;
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
-      {/* Product Image */}
-      <Link to={`/product/${product._id}`} className="block relative group overflow-hidden h-64 bg-gray-100">
-         {/* We use a placeholder if image is missing, or the real image */}
-        <img 
-          src={product.image || "https://placehold.co/400x400?text=No+Image"} 
-          alt={product.name} 
-          className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+    <Link
+      to={`/product/${product._id}`}
+      className="bg-white border border-gray-200 rounded-sm hover:shadow-lg transition-shadow p-4 flex flex-col h-full group cursor-pointer"
+    >
+      {/* Image Container */}
+      <div className="bg-gray-100 h-48 flex justify-center items-center rounded-sm mb-4 relative overflow-hidden">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="h-full w-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300"
         />
-      </Link>
+        {discount > 0 && (
+          <span className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+            {discount}% off
+          </span>
+        )}
+      </div>
 
-      <div className="p-4 flex flex-col flex-grow">
-        {/* Brand/Category */}
-        <p className="text-xs text-gray-500 mb-1 uppercase tracking-wide">{product.category}</p>
-        
-        {/* Title */}
-        <Link to={`/product/${product._id}`} className="text-gray-900 font-medium hover:text-amazon-yellow line-clamp-2 mb-2">
+      {/* Details */}
+      <div className="flex-grow flex flex-col">
+        <h3 className="text-gray-900 font-medium text-lg leading-snug mb-1 group-hover:text-amazon-yellow transition-colors line-clamp-2">
           {product.name}
-        </Link>
+        </h3>
 
-        {/* Rating Mockup */}
+        {/* Rating */}
         <div className="flex items-center mb-2">
-          {[...Array(5)].map((_, i) => (
-            <Star 
-              key={i} 
-              size={14} 
-              className={i < product.rating ? "text-yellow-400 fill-current" : "text-gray-300"} 
-            />
-          ))}
-          <span className="text-xs text-blue-600 ml-1 hover:underline cursor-pointer">{product.numReviews}</span>
+          <div className="flex text-yellow-400">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                size={16}
+                fill={i < product.rating ? "currentColor" : "none"}
+                className={i >= product.rating ? "text-gray-300" : ""}
+              />
+            ))}
+          </div>
+          <span className="text-xs text-gray-500 ml-2">
+            {product.numReviews}
+          </span>
         </div>
 
-        {/* Price & Action */}
-        <div className="mt-auto flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-xs text-gray-500 line-through">₹{product.price + 500}</span>
-            <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
+        {/* Price Section */}
+        <div className="mt-auto">
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-bold text-gray-900">
+              ₹{product.price}
+            </span>
+            {product.mrp > product.price && (
+              <span className="text-sm text-gray-500 line-through">
+                ₹{product.mrp}
+              </span>
+            )}
           </div>
-          
-          <button className="bg-amazon-yellow text-amazon-blue p-2 rounded-full hover:bg-yellow-500 transition-colors shadow-sm">
-            <ShoppingCart size={20} />
-          </button>
+          {product.mrp > product.price && (
+            <p className="text-xs text-gray-500">
+              Save ₹{product.mrp - product.price} ({discount}%)
+            </p>
+          )}
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 

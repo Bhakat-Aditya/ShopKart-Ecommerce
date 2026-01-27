@@ -12,23 +12,30 @@ const PlaceOrder = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // 1. Calculations
+  // --- 1. Calculations ---
   const addDecimals = (num) => {
     return (Math.round(num * 100) / 100).toFixed(2);
   };
 
-  const itemsPrice = addDecimals(
+  const itemsPrice = Number(
     cartItems.reduce((acc, item) => acc + item.price * item.qty, 0),
   );
-  const shippingPrice = addDecimals(itemsPrice > 500 ? 0 : 100); 
-  const taxPrice = addDecimals(Number((0.18 * itemsPrice).toFixed(2)));
-  const totalPrice = (
-    Number(itemsPrice) +
-    Number(shippingPrice) +
-    Number(taxPrice)
-  ).toFixed(2);
 
-  // 2. Redirect if missing data
+  // DELIVERY LOGIC:
+  // 1. Base Shipping: ₹0 if total > 500, else ₹75
+  const baseShipping = itemsPrice > 500 ? 0 : 75;
+
+  // 2. Express Fee: ₹85 if 'isExpress' is true, else 0
+  const expressCost = shippingAddress.isExpress ? 85 : 0;
+
+  // 3. Final Shipping Cost
+  const shippingPrice = baseShipping + expressCost;
+
+  const taxPrice = Number((0.18 * itemsPrice).toFixed(2)); // 18% GST
+
+  const totalPrice = (itemsPrice + shippingPrice + taxPrice).toFixed(2);
+
+  // --- 2. Redirect if missing data ---
   useEffect(() => {
     if (!shippingAddress.address) {
       navigate("/shipping");
@@ -37,7 +44,7 @@ const PlaceOrder = () => {
     }
   }, [shippingAddress, cartItems, navigate]);
 
-  // 3. Place Order Handler
+  // --- 3. Place Order Handler ---
   const placeOrderHandler = async () => {
     try {
       setLoading(true);
@@ -53,16 +60,17 @@ const PlaceOrder = () => {
           orderItems: cartItems,
           shippingAddress: shippingAddress,
           paymentMethod: "Stripe",
-          itemsPrice: Number(itemsPrice),
-          shippingPrice: Number(shippingPrice),
-          taxPrice: Number(taxPrice),
-          totalPrice: Number(totalPrice),
+          itemsPrice: itemsPrice,
+          shippingPrice: shippingPrice,
+          taxPrice: taxPrice,
+          totalPrice: totalPrice,
         },
         config,
       );
 
       alert("Order Placed Successfully!");
-      navigate("/");
+      // clearCart(); // You might want to implement a clearCart function in context later
+      navigate("/"); // Or navigate to `/order/${data._id}` if you build that page
     } catch (err) {
       setError(err.response?.data?.message || err.message);
     } finally {
@@ -88,11 +96,26 @@ const PlaceOrder = () => {
             <h2 className="text-lg font-bold mb-3 uppercase tracking-wide text-gray-700">
               Shipping
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-2">
               <strong>Address: </strong>
               {shippingAddress.address}, {shippingAddress.city},{" "}
               {shippingAddress.postalCode}, {shippingAddress.country}
             </p>
+            {/* Show Delivery Method Badge */}
+            <div className="flex gap-2">
+              <span
+                className={`px-2 py-1 rounded text-xs font-bold ${baseShipping === 0 ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
+              >
+                {baseShipping === 0
+                  ? "Free Standard Delivery"
+                  : "Standard Delivery"}
+              </span>
+              {shippingAddress.isExpress && (
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">
+                  Express (+₹85)
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Order Items */}
@@ -145,14 +168,24 @@ const PlaceOrder = () => {
                 <span>Items:</span>
                 <span>₹{itemsPrice}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Shipping:</span>
-                <span>₹{shippingPrice}</span>
+
+              {/* Detailed Shipping Breakdown */}
+              <div className="flex justify-between text-gray-600">
+                <span>Base Delivery:</span>
+                <span>{baseShipping === 0 ? "FREE" : `₹${baseShipping}`}</span>
               </div>
+              {shippingAddress.isExpress && (
+                <div className="flex justify-between text-blue-600">
+                  <span>Express Fee:</span>
+                  <span>+₹85</span>
+                </div>
+              )}
+
               <div className="flex justify-between">
                 <span>Tax (18%):</span>
                 <span>₹{taxPrice}</span>
               </div>
+
               <div className="border-t pt-2 mt-2 flex justify-between font-bold text-lg text-red-700">
                 <span>Order Total:</span>
                 <span>₹{totalPrice}</span>

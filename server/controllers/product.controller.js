@@ -80,7 +80,7 @@ export const deleteProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
     try {
-        const { name, price, description, image, brand, category, countInStock } = req.body;
+        const { name, price, description, image, brand, category, countInStock, mrp } = req.body; // <--- Add mrp
         const product = await Product.findById(req.params.id);
 
         if (product) {
@@ -91,6 +91,7 @@ export const updateProduct = async (req, res) => {
             product.brand = brand;
             product.category = category;
             product.countInStock = countInStock;
+            product.mrp = mrp || 0;
 
             const updatedProduct = await product.save();
             res.json(updatedProduct);
@@ -102,20 +103,24 @@ export const updateProduct = async (req, res) => {
     }
 };
 
+
 export const createProductReview = async (req, res) => {
     try {
         const { rating, comment } = req.body;
         const product = await Product.findById(req.params.id);
 
         if (product) {
-            // Check if user already reviewed
+            // --- SAFETY CHECK: Initialize array if missing ---
+            if (!product.reviews) {
+                product.reviews = [];
+            }
+
             const alreadyReviewed = product.reviews.find(
                 (r) => r.user.toString() === req.user._id.toString()
             );
 
             if (alreadyReviewed) {
-                res.status(400);
-                throw new Error('Product already reviewed');
+                return res.status(400).json({ message: 'Product already reviewed' });
             }
 
             const review = {
@@ -127,7 +132,6 @@ export const createProductReview = async (req, res) => {
 
             product.reviews.push(review);
 
-            // Recalculate Average Rating
             product.numReviews = product.reviews.length;
             product.rating =
                 product.reviews.reduce((acc, item) => item.rating + acc, 0) /
