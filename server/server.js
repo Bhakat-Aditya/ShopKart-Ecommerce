@@ -40,7 +40,7 @@ app.use(express.json());
 // routes
 
 // Auth route
-app.use('/api/auth', authRoutes);
+app.use('/api/users', authRoutes);
 // Product route
 app.use('/api/products', productRoutes);
 // Order route

@@ -35,6 +35,7 @@ export const registerUser = async (req, res) => {
                 message: "OTP sent to email"
             });
         } catch (error) {
+            console.error("GMAIL ERROR DETAILS:", error);
             await User.findByIdAndDelete(user._id); // Rollback
             res.status(500).json({ message: "Email could not be sent" });
         }
