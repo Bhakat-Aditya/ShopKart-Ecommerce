@@ -1,5 +1,5 @@
-import { useParams, Link } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react"; // Removed useRef
 import axios from "axios";
 import {
   Star,
@@ -9,25 +9,24 @@ import {
   Truck,
   ShieldCheck,
 } from "lucide-react";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import { useCart } from "../context/CartContext";
-import { useNavigate } from "react-router-dom";
+
+// Removed GSAP imports to prevent interference
+// import { useGSAP } from "@gsap/react";
+// import gsap from "gsap";
 
 const ProductDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [qty, setQty] = useState(1);
-  const { addToCart } = useCart();
-  const navigate = useNavigate();
-  
-  // Refs for animation
-  const imageRef = useRef(null);
-  const infoRef = useRef(null);
 
-  // 1. Fetch Data
+  // Removed Refs (imageRef, infoRef)
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -42,24 +41,12 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id]);
 
-  // 2. Animate when product loads
-  useGSAP(() => {
-    if (product) {
-      gsap.from(imageRef.current, {
-        x: -100,
-        opacity: 0,
-        duration: 0.8,
-        ease: "power3.out",
-      });
-      gsap.from(infoRef.current, {
-        x: 100,
-        opacity: 0,
-        duration: 0.8,
-        delay: 0.2,
-        ease: "power3.out",
-      });
-    }
-  }, [product]);
+  // --- DELETE THE useGSAP BLOCK HERE ---
+
+  const handleAddToCart = () => {
+    addToCart(product, qty);
+    navigate("/cart");
+  };
 
   if (loading)
     return (
@@ -76,15 +63,8 @@ const ProductDetails = () => {
   if (!product)
     return <div className="text-center py-20">Product not found</div>;
 
-
-  const handleAddToCart = () => {
-    addToCart(product, qty);
-    navigate("/cart");
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Back Button */}
       <Link
         to="/"
         className="inline-flex items-center text-gray-500 hover:text-amazon-blue mb-6 transition-colors"
@@ -93,11 +73,8 @@ const ProductDetails = () => {
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        {/* Left Column: Image */}
-        <div
-          ref={imageRef}
-          className="flex justify-center items-start bg-white p-8 rounded-xl border border-gray-200 shadow-sm"
-        >
+        {/* Removed ref={imageRef} */}
+        <div className="flex justify-center items-start bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
           <img
             src={product.image}
             alt={product.name}
@@ -105,9 +82,8 @@ const ProductDetails = () => {
           />
         </div>
 
-        {/* Right Column: Info */}
-        <div ref={infoRef} className="flex flex-col space-y-4">
-          {/* Title & Brand */}
+        {/* Removed ref={infoRef} */}
+        <div className="flex flex-col space-y-4">
           <div className="border-b border-gray-200 pb-4">
             <p className="text-sm text-amazon-blue font-bold tracking-wide uppercase mb-1">
               {product.brand}
@@ -116,7 +92,6 @@ const ProductDetails = () => {
               {product.name}
             </h1>
 
-            {/* Rating */}
             <div className="flex items-center space-x-2">
               <div className="flex text-yellow-400">
                 {[...Array(5)].map((_, i) => (
@@ -134,7 +109,6 @@ const ProductDetails = () => {
             </div>
           </div>
 
-          {/* Price Block */}
           <div className="py-2">
             <div className="flex items-baseline space-x-2">
               <span className="text-sm text-gray-500 font-normal">Price:</span>
@@ -145,7 +119,6 @@ const ProductDetails = () => {
             <p className="text-sm text-gray-500 mt-1">Inclusive of all taxes</p>
           </div>
 
-          {/* Badges */}
           <div className="flex space-x-6 text-sm text-gray-600 py-2">
             <div className="flex flex-col items-center text-center w-20">
               <div className="bg-gray-100 p-3 rounded-full mb-1">
@@ -161,7 +134,6 @@ const ProductDetails = () => {
             </div>
           </div>
 
-          {/* Description */}
           <div className="py-2">
             <h3 className="font-bold text-gray-800 mb-2">About this item:</h3>
             <p className="text-gray-600 leading-relaxed text-sm">
@@ -169,7 +141,6 @@ const ProductDetails = () => {
             </p>
           </div>
 
-          {/* Add to Cart Section */}
           <div className="border border-gray-300 rounded-lg p-5 bg-white shadow-sm mt-4 w-full md:max-w-xs">
             <div className="mb-4">
               <span

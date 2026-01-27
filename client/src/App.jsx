@@ -1,6 +1,4 @@
 import { Routes, Route } from "react-router-dom";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import Navbar from "./components/Navbar";
 import ProductDetails from "./pages/ProductDetails";
 import Home from "./pages/Home";
@@ -14,10 +12,6 @@ import AdminRoute from "./components/AdminRoute";
 import ProductList from "./pages/admin/ProductList";
 
 function App() {
-  useGSAP(() => {
-    gsap.fromTo("body", { opacity: 0 }, { opacity: 1, duration: 1 });
-  });
-
   return (
     <div className="min-h-screen flex flex-col font-outfit bg-gray-100">
       <Navbar />

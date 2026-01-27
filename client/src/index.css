@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* Define your custom Amazon-like theme here */
 @theme {
   --color-amazon-blue: #131921;
   --color-amazon-light: #232F3E;
@@ -11,5 +10,6 @@
 /* Global Styles */
 body {
   background-color: #EAEDED;
+  color: #131921; /* <--- YOU MUST ADD THIS LINE */
   font-family: var(--font-outfit);
 }
