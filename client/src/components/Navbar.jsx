@@ -103,10 +103,13 @@ const Navbar = () => {
           )}
 
           {/* Returns & Orders */}
-          <div className="hidden md:flex flex-col text-xs leading-tight cursor-pointer hover:underline">
+          <Link
+            to="/myorders"
+            className="hidden md:flex flex-col text-xs leading-tight cursor-pointer hover:underline"
+          >
             <span className="text-gray-200">Returns</span>
             <span className="font-bold text-sm">& Orders</span>
-          </div>
+          </Link>
 
           {/* Cart Icon */}
           <Link

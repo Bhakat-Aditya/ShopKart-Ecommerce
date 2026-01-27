@@ -17,8 +17,8 @@ const Shipping = () => {
   const submitHandler = (e) => {
     e.preventDefault();
     saveShippingAddress({ address, city, postalCode, country });
-    navigate("/placeorder"); 
-  };
+    navigate("/placeorder");
+};
 
   return (
     <div className="flex justify-center items-center min-h-[80vh] px-4">
