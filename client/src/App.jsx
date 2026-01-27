@@ -10,6 +10,7 @@ import PlaceOrder from "./pages/PlaceOrder";
 import MyOrders from "./pages/MyOrders";
 import AdminRoute from "./components/AdminRoute";
 import ProductList from "./pages/admin/ProductList";
+import ProductEdit from "./pages/admin/ProductEdit";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/myorders" element={<MyOrders />} />
           <Route path="/admin" element={<AdminRoute />}>
             <Route path="productlist" element={<ProductList />} />
+            <Route path="product/:id/edit" element={<ProductEdit />} />
           </Route>
         </Routes>
       </main>

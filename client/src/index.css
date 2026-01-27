@@ -10,6 +10,6 @@
 /* Global Styles */
 body {
   background-color: #EAEDED;
-  color: #131921; /* <--- YOU MUST ADD THIS LINE */
+  color: #131921; /* <--- ADD THIS LINE to make text visible */
   font-family: var(--font-outfit);
 }

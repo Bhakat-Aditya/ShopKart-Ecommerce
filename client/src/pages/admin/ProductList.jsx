@@ -1,20 +1,28 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext"; // Correct path
 import { Edit, Trash2, Plus, Loader } from "lucide-react";
 
 const ProductList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [createLoading, setCreateLoading] = useState(false);
 
+  // 1. Fetch Products
   const fetchProducts = async () => {
     try {
       const { data } = await axios.get("/api/products");
-      setProducts(data);
+      // The backend returns { products, page, pages } now
+      // We check if data is an array or an object
+      if (data.products) {
+        setProducts(data.products);
+      } else {
+        setProducts(data);
+      }
       setLoading(false);
     } catch (error) {
       console.error(error);
@@ -22,6 +30,7 @@ const ProductList = () => {
     }
   };
 
+  // 2. Check Admin & Load Data
   useEffect(() => {
     if (user && user.role === "admin") {
       fetchProducts();
@@ -30,6 +39,7 @@ const ProductList = () => {
     }
   }, [user, navigate]);
 
+  // 3. Delete Product
   const deleteHandler = async (id) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
@@ -37,17 +47,18 @@ const ProductList = () => {
         await axios.delete(`/api/products/${id}`, config);
         fetchProducts(); // Refresh list
       } catch (error) {
-        alert(error.message);
+        alert(error.response?.data?.message || error.message);
       }
     }
   };
 
+  // 4. Create Dummy Product
   const createProductHandler = async () => {
     try {
       setCreateLoading(true);
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       const { data } = await axios.post("/api/products", {}, config);
-      // Redirect to edit page immediately after creating dummy
+      // Redirect to edit page immediately
       navigate(`/admin/product/${data._id}/edit`);
     } catch (error) {
       alert(error.response?.data?.message || error.message);
