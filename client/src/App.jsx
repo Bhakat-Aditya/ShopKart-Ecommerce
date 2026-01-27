@@ -11,6 +11,7 @@ import MyOrders from "./pages/MyOrders";
 import AdminRoute from "./components/AdminRoute";
 import ProductList from "./pages/admin/ProductList";
 import ProductEdit from "./pages/admin/ProductEdit";
+import OrderDetails from "./pages/OrderDetails";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="/shipping" element={<Shipping />} />
           <Route path="/placeorder" element={<PlaceOrder />} />
           <Route path="/myorders" element={<MyOrders />} />
+          <Route path="/order/:id" element={<OrderDetails />} />
           <Route path="/admin" element={<AdminRoute />}>
             <Route path="productlist" element={<ProductList />} />
             <Route path="product/:id/edit" element={<ProductEdit />} />

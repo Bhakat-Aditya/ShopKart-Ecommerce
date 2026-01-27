@@ -69,8 +69,7 @@ const PlaceOrder = () => {
       );
 
       alert("Order Placed Successfully!");
-      // clearCart(); // You might want to implement a clearCart function in context later
-      navigate("/"); // Or navigate to `/order/${data._id}` if you build that page
+      navigate(`/order/${data._id}`);
     } catch (err) {
       setError(err.response?.data?.message || err.message);
     } finally {

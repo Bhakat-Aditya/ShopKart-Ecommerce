@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router-dom"; // Link is already imported
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { Loader, Package, XCircle, CheckCircle } from "lucide-react";
@@ -112,9 +112,13 @@ const MyOrders = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-amazon-blue hover:text-amazon-yellow bg-gray-100 px-3 py-1 rounded border border-gray-300">
+                    {/* --- CHANGED THIS BUTTON TO LINK --- */}
+                    <Link
+                      to={`/order/${order._id}`}
+                      className="text-amazon-blue hover:text-amazon-yellow bg-gray-100 px-3 py-1 rounded border border-gray-300 inline-block transition-colors"
+                    >
                       Details
-                    </button>
+                    </Link>
                   </td>
                 </tr>
               ))}
