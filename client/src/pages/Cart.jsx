@@ -1,14 +1,21 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext"; // <--- 1. Import Auth Context
 import { Trash2, ShoppingBag, ArrowRight, Minus, Plus } from "lucide-react";
 
 const Cart = () => {
   const { cartItems, removeFromCart, addToCart } = useCart();
+  const { user } = useAuth(); // <--- 2. Get the current user
   const navigate = useNavigate();
 
   const checkoutHandler = () => {
-    navigate("/login?redirect=shipping");
+    // <--- 3. SMART CHECK ---
+    if (user) {
+      navigate("/shipping"); // If logged in, go straight to shipping
+    } else {
+      navigate("/login?redirect=shipping"); // If not, go to login first
+    }
   };
 
   const totalItems = cartItems.reduce((acc, item) => acc + item.qty, 0);

@@ -1,12 +1,22 @@
 import express from 'express';
-import { registerUser, loginUser } from '../controllers/auth.controller.js';
+import { 
+    registerUser, 
+    loginUser, 
+    verifyOtpAndLogin, 
+    addAddress, 
+    getAddresses 
+} from '../controllers/auth.controller.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-// Route: POST /api/auth/register
-router.post('/register', registerUser);
-
-// Route: POST /api/auth/login
+router.post('/', registerUser);
 router.post('/login', loginUser);
+router.post('/verify-otp', verifyOtpAndLogin); // <--- New Route
+
+// Address Routes
+router.route('/address')
+    .post(protect, addAddress)
+    .get(protect, getAddresses);
 
 export default router;

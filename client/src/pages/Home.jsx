@@ -1,76 +1,130 @@
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom"; // Import useParams
-import axios from "axios";
-import ProductCard from "../components/ProductCard";
-import { Loader } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import ProductRow from "../components/ProductRow";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+// Placeholder Banner Images (You can replace these with your own uploaded banners later)
+const banners = [
+  "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070&auto=format&fit=crop", // Shopping
+  "https://images.unsplash.com/photo-1550009158-9ebf69173e03?q=80&w=2101&auto=format&fit=crop", // Electronics
+  "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop", // Fashion
+];
 
 const Home = () => {
-  const { keyword } = useParams(); // Get keyword from URL
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { keyword } = useParams();
 
-  // Pagination State (We'll use this later)
-  const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
+  // --- Hero Slider Logic ---
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      try {
-        // Construct URL with keyword if it exists
-        const url = keyword
-          ? `/api/products?keyword=${keyword}`
-          : `/api/products`;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % banners.length);
+    }, 5000); // Auto-slide every 5 seconds
+    return () => clearInterval(timer);
+  }, []);
 
-        const { data } = await axios.get(url);
+  const nextSlide = () =>
+    setCurrentSlide((prev) => (prev + 1) % banners.length);
+  const prevSlide = () =>
+    setCurrentSlide((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
 
-        // Backend now returns { products, page, pages }
-        setProducts(data.products);
-        setPage(data.page);
-        setPages(data.pages);
-
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, [keyword]); // Refetch when keyword changes
+  // --- Search View (If user searches, show grid instead of rows) ---
+  if (keyword) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold mb-6">Results for "{keyword}"</h2>
+        {/* Note: You can re-use the grid logic here if you want, 
+                   or just use a single ProductRow for search results. 
+                   For now, let's keep the row logic which is cleaner. */}
+        <ProductRow title="Search Results" />
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-8 px-4 font-outfit">
-      {/* Show "Back" button if searching */}
-      {keyword && (
-        <Link
-          to="/"
-          className="bg-gray-200 px-4 py-2 rounded mb-4 inline-block hover:bg-gray-300"
+    <div className="bg-gray-50 min-h-screen font-outfit pb-20">
+      {/* HERO CAROUSEL */}
+      <div className="relative w-full h-[300px] md:h-[500px] overflow-hidden">
+        {/* Slides */}
+        <div
+          className="flex transition-transform duration-700 ease-in-out h-full"
+          style={{ transform: `translateX(-${currentSlide * 100}%)` }}
         >
-          Go Back
-        </Link>
-      )}
-
-      <h1 className="text-3xl font-bold text-amazon-light mb-6">
-        {keyword ? `Results for "${keyword}"` : "Latest Products"}
-      </h1>
-
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader className="animate-spin text-amazon-blue" size={48} />
-        </div>
-      ) : error ? (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          Error: {error}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <ProductCard key={product._id} product={product} />
+          {banners.map((img, index) => (
+            <div key={index} className="w-full h-full flex-shrink-0 relative">
+              <img
+                src={img}
+                alt={`Banner ${index}`}
+                className="w-full h-full object-cover"
+              />
+              {/* Dark Overlay for Text */}
+              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent flex items-end pb-12 pl-8 md:pl-20">
+                <div className="text-white max-w-xl animate-fade-in-up">
+                  <h1 className="text-3xl md:text-5xl font-bold mb-2 shadow-sm">
+                    {index === 0
+                      ? "Big Savings on Tech"
+                      : index === 1
+                        ? "New Arrivals"
+                        : "Fashion Trends"}
+                  </h1>
+                  <p className="text-lg md:text-xl opacity-90 mb-4">
+                    Up to 50% off on your favorite brands. Limited time offer.
+                  </p>
+                  <button className="bg-amazon-yellow text-amazon-blue px-6 py-3 rounded-full font-bold hover:bg-yellow-400 transition transform hover:scale-105">
+                    Shop Now
+                  </button>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
-      )}
+
+        {/* Slider Controls */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white p-2 rounded-full backdrop-blur-sm transition"
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white p-2 rounded-full backdrop-blur-sm transition"
+        >
+          <ChevronRight size={24} />
+        </button>
+
+        {/* Indicators */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          {banners.map((_, i) => (
+            <div
+              key={i}
+              className={`h-2 rounded-full transition-all duration-300 ${i === currentSlide ? "w-8 bg-amazon-yellow" : "w-2 bg-white/50"}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* --- CONTENT ROWS (The "Amazon" Layout) --- */}
+      {/* Move content slightly up to overlap banner like Amazon */}
+      <div className="relative z-10 -mt-10 md:-mt-20 space-y-4">
+        {/* Row 1: Latest Items */}
+        <ProductRow title="Latest Drops" category="" />
+
+        {/* Row 2: Electronics */}
+        <ProductRow title="Top Electronics" category="Electronics" />
+
+        {/* Row 3: Mobiles */}
+        <ProductRow title="Best Selling Mobiles" category="Mobiles" />
+
+        {/* Row 4: Fashion */}
+        <ProductRow title="Fashion & Apparel" category="Fashion" />
+
+        {/* Row 5: Home & Kitchen */}
+        <ProductRow
+          title="Home & Kitchen Essentials"
+          category="Home & Kitchen"
+        />
+      </div>
     </div>
   );
 };
