@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react"; // <--- Add useEffect
+import { Link, useNavigate, useLocation } from "react-router-dom"; // <--- Add useLocation
 import axios from "axios";
 import { Mail, Lock, Loader, KeyRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -8,29 +8,40 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // OTP State
-  const [step, setStep] = useState(1); // 1 = Login Form, 2 = OTP Form
+  const [step, setStep] = useState(1);
   const [otp, setOtp] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
-  const { login } = useAuth();
 
-  // STEP 1: Check credentials & Request OTP
+  const navigate = useNavigate();
+  const location = useLocation(); // <--- Get URL params
+  const { login, user } = useAuth();
+
+  // 1. Calculate Redirect Path
+  // If URL is /login?redirect=/admin/productlist, then redirect = "/admin/productlist"
+  const searchParams = new URLSearchParams(location.search);
+  const redirect = searchParams.get("redirect") || "/";
+
+  // 2. If already logged in, redirect immediately
+  useEffect(() => {
+    if (user) {
+      navigate(redirect);
+    }
+  }, [user, navigate, redirect]);
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      // Note: Make sure your backend route is /api/users/login
       const { data } = await axios.post("/api/users/login", {
         email,
         password,
       });
-      alert(data.message); // "OTP sent"
-      setStep(2); // Move to OTP step
+      alert(data.message);
+      setStep(2);
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password");
     } finally {
@@ -38,7 +49,6 @@ const Login = () => {
     }
   };
 
-  // STEP 2: Verify OTP & Get Token
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -49,8 +59,10 @@ const Login = () => {
         email,
         otp,
       });
-      login(data); // Save user to context/localstorage
-      navigate("/");
+      login(data);
+
+      // 3. Navigate to the Redirect Path (instead of just "/")
+      navigate(redirect);
     } catch (err) {
       setError(err.response?.data?.message || "Invalid OTP");
     } finally {
@@ -59,6 +71,7 @@ const Login = () => {
   };
 
   return (
+    // ... (Keep your existing JSX exactly as it is) ...
     <div className="flex justify-center items-center min-h-[80vh] font-outfit">
       <div className="bg-white p-8 rounded-lg shadow-md border border-gray-200 w-full max-w-sm">
         {step === 1 ? (
@@ -117,14 +130,18 @@ const Login = () => {
             </form>
             <div className="mt-6 text-sm text-center">
               <span className="text-gray-600">New to ShopKart? </span>
-              <Link to="/register" className="text-blue-600 hover:underline">
+              <Link
+                to={`/register?redirect=${encodeURIComponent(redirect)}`}
+                className="text-blue-600 hover:underline"
+              >
                 Create your account
               </Link>
             </div>
           </>
         ) : (
-          /* --- STEP 2: OTP VERIFICATION --- */
+          /* --- STEP 2: OTP --- */
           <>
+            {/* ... Keep existing OTP JSX ... */}
             <h1 className="text-2xl font-medium mb-2">Verify OTP</h1>
             <p className="text-sm text-gray-500 mb-6">
               We sent a code to {email}

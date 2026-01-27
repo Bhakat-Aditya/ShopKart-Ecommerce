@@ -12,6 +12,8 @@ import AdminRoute from "./components/AdminRoute";
 import ProductList from "./pages/admin/ProductList";
 import ProductEdit from "./pages/admin/ProductEdit";
 import OrderDetails from "./pages/OrderDetails";
+import SellerRegister from "./pages/seller/SellerRegister";
+import SellerDashboard from "./pages/seller/SellerDashboard";
 
 function App() {
   return (
@@ -33,6 +35,8 @@ function App() {
             <Route path="productlist" element={<ProductList />} />
             <Route path="product/:id/edit" element={<ProductEdit />} />
           </Route>
+          <Route path="/seller/register" element={<SellerRegister />} />
+          <Route path="/seller/dashboard" element={<SellerDashboard />} />
         </Routes>
       </main>
       <footer className="bg-amazon-light text-white p-4 text-center mt-auto">

@@ -11,6 +11,7 @@ import productRoutes from './routes/product.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
+import sellerRoutes from './routes/seller.routes.js';
 
 const __dirname = path.resolve();
 if (!fs.existsSync(path.join(__dirname, '/uploads'))) {
@@ -49,7 +50,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/upload', uploadRoutes);
 // Payment route
 app.use('/api/payment', paymentRoutes);
-
+// Seller route
+app.use('/api/seller', sellerRoutes);
 
 
 // Test route

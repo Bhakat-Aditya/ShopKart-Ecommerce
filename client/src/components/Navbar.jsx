@@ -1,5 +1,13 @@
-import { ShoppingCart, User, Search, Menu, LogOut } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
+import {
+  ShoppingCart,
+  User,
+  Search,
+  Menu,
+  LogOut,
+  Store,
+  LayoutDashboard,
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -53,7 +61,7 @@ const Navbar = () => {
         </div>
 
         {/* Search Bar (Updated) */}
-        <div className="hidden md:flex flex-grow justify-center max-w-2xl relative">
+        <div className="hidden md:flex grow justify-center max-w-2xl relative">
           <form
             onSubmit={submitHandler}
             ref={searchBarRef}
@@ -65,7 +73,7 @@ const Navbar = () => {
               placeholder="Search ShopKart..."
               onFocus={handleSearchFocus}
               onBlur={handleSearchBlur}
-              onChange={(e) => setKeyword(e.target.value)} // Bind input
+              onChange={(e) => setKeyword(e.target.value)}
               value={keyword}
             />
             <button
@@ -77,12 +85,30 @@ const Navbar = () => {
           </form>
         </div>
 
-        {/* Right Icons (Keep existing code exactly as it was) */}
         <div className="flex items-center gap-6">
-          {/* ... (Copy your existing User/Cart logic here) ... */}
-          {/* If you need the full code block for this section let me know, 
-               otherwise keep what you had for User/Cart/Orders */}
-
+          {user &&
+            !user.isAdmin &&
+            (user.isSeller ? (
+              <Link
+                to="/seller/dashboard"
+                className="hidden md:flex flex-col items-center border border-transparent hover:border-white p-2 rounded"
+              >
+                <span className="text-xs">Seller</span>
+                <span className="font-bold flex items-center gap-1">
+                  <LayoutDashboard size={18} /> Dashboard
+                </span>
+              </Link>
+            ) : (
+              <Link
+                to="/seller/register"
+                className="hidden md:flex flex-col items-center border border-transparent hover:border-white p-2 rounded"
+              >
+                <span className="text-xs">Become a</span>
+                <span className="font-bold flex items-center gap-1">
+                  <Store size={18} /> Seller
+                </span>
+              </Link>
+            ))}
           {/* User Section */}
           {user ? (
             <div className="hidden md:flex flex-col text-xs leading-tight cursor-pointer group relative">

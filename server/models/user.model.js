@@ -11,19 +11,31 @@ const addressSchema = mongoose.Schema({
     isDefault: { type: Boolean, default: false }
 });
 
+const sellerSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    logo: { type: String },
+    description: { type: String, required: true },
+    rating: { type: Number, default: 0, required: true },
+    numReviews: { type: Number, default: 0, required: true },
+});
+
 const userSchema = mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     isAdmin: { type: Boolean, required: true, default: false },
 
-    // --- NEW: Address Book ---
+    
     addresses: [addressSchema],
 
-    // --- NEW: OTP Fields ---
+    
     otp: { type: String },
     otpExpires: { type: Date },
-    isVerified: { type: Boolean, default: false } // For Signup verification
+    isVerified: { type: Boolean, default: false }, 
+
+    
+    isSeller: { type: Boolean, default: false },
+    seller: sellerSchema,
 }, {
     timestamps: true,
 });
