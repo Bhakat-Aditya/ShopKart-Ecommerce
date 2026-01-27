@@ -16,10 +16,35 @@ const ProductEdit = () => {
   const [category, setCategory] = useState("");
   const [countInStock, setCountInStock] = useState(0);
   const [description, setDescription] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const uploadFileHandler = async (e) => {
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("image", file);
+    setUploading(true);
+
+    try {
+      const config = {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      };
+
+      const { data } = await axios.post("/api/upload", formData, config);
+
+      setImage(data.image); // Set the Cloudinary URL to our state
+      setUploading(false);
+    } catch (error) {
+      console.error(error);
+      setUploading(false);
+      alert("Image upload failed");
+    }
+  };
 
   // 1. Fetch current data
   useEffect(() => {
@@ -120,26 +145,36 @@ const ProductEdit = () => {
             />
           </div>
 
-          {/* Image URL */}
+          {/* Image Input Section */}
           <div>
-            <label className="block text-sm font-bold mb-1">Image URL</label>
+            <label className="block text-sm font-bold mb-1">Image</label>
+
+            {/* 1. Show URL Input (Optional, kept for manual entry) */}
             <input
               type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:border-amazon-yellow outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded mb-2"
               value={image}
               onChange={(e) => setImage(e.target.value)}
-              placeholder="/images/sample.jpg or https://..."
+              placeholder="Enter image URL"
             />
-            {/* Image Preview */}
+
+            {/* 2. Show File Upload Input */}
+            <div className="flex items-center">
+              <input
+                type="file"
+                onChange={uploadFileHandler}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amazon-yellow file:text-amazon-blue hover:file:bg-yellow-400"
+              />
+              {uploading && <Loader className="animate-spin ml-3" />}
+            </div>
+
+            {/* Preview */}
             {image && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-500 mb-1">Preview:</p>
-                <img
-                  src={image}
-                  alt="Preview"
-                  className="h-20 w-20 object-contain border p-1 rounded"
-                />
-              </div>
+              <img
+                src={image}
+                alt="Preview"
+                className="h-20 w-20 object-contain mt-2 border p-1"
+              />
             )}
           </div>
 

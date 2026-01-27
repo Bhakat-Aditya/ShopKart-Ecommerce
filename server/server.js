@@ -2,13 +2,19 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDb from './config/db.config.js';
+import path from 'path'; 
+import fs from 'fs'; 
 
 // import routes
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
 import orderRoutes from './routes/order.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
 
-
+const __dirname = path.resolve();
+if (!fs.existsSync(path.join(__dirname, '/uploads'))) {
+    fs.mkdirSync(path.join(__dirname, '/uploads'));
+}
 
 // Load environment variables
 dotenv.config();
@@ -38,6 +44,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 // Order route
 app.use('/api/orders', orderRoutes);
+// Upload route
+app.use('/api/upload', uploadRoutes);
 
 
 

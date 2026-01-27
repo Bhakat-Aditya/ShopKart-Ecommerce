@@ -1,5 +1,5 @@
 import { ShoppingCart, User, Search, Menu, LogOut } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import { useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -9,10 +9,11 @@ import { useAuth } from "../context/AuthContext";
 const Navbar = () => {
   const { cartItems } = useCart();
   const { user, logout } = useAuth();
-  const searchBarRef = useRef(null);
-  const searchInputRef = useRef(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate(); // Hook for navigation
 
+  const [keyword, setKeyword] = useState(""); // Search state
+
+  const searchBarRef = useRef(null);
   const { contextSafe } = useGSAP();
 
   const handleSearchFocus = contextSafe(() => {
@@ -20,27 +21,28 @@ const Navbar = () => {
       width: "100%",
       duration: 0.4,
       ease: "power2.out",
-      boxShadow: "0px 0px 10px rgba(254, 189, 105, 0.5)",
     });
   });
 
   const handleSearchBlur = contextSafe(() => {
-    gsap.to(searchBarRef.current, {
-      width: "80%",
-      duration: 0.4,
-      ease: "power2.in",
-      boxShadow: "none",
-    });
+    gsap.to(searchBarRef.current, { width: "80%", duration: 0.4 });
   });
 
+  // --- SEARCH HANDLER ---
+  const submitHandler = (e) => {
+    e.preventDefault();
+    if (keyword.trim()) {
+      navigate(`/search/${keyword}`);
+    } else {
+      navigate("/");
+    }
+  };
+
   return (
-    <nav className="bg-amazon-blue text-white sticky top-0 z-50 shadow-md">
+    <nav className="bg-amazon-blue text-white sticky top-0 z-50 shadow-md font-outfit">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
-        {/* 1. Logo & Mobile Menu */}
+        {/* Logo */}
         <div className="flex items-center gap-2">
-          <button className="md:hidden text-white">
-            <Menu size={24} />
-          </button>
           <Link
             to="/"
             className="text-2xl font-bold tracking-tighter flex items-center gap-1"
@@ -50,39 +52,44 @@ const Navbar = () => {
           </Link>
         </div>
 
-        {/* 2. Search Bar (Hidden on mobile for now, visible md+) */}
+        {/* Search Bar (Updated) */}
         <div className="hidden md:flex flex-grow justify-center max-w-2xl relative">
-          <div
+          <form
+            onSubmit={submitHandler}
             ref={searchBarRef}
-            className="flex items-center bg-white rounded-md overflow-hidden w-[80%] transition-all"
+            className="flex items-center bg-white rounded-md overflow-hidden w-[80%]"
           >
-            <div className="bg-gray-100 px-3 py-2 text-gray-600 border-r border-gray-300 text-sm cursor-pointer hover:bg-gray-200">
-              All
-            </div>
             <input
-              ref={searchInputRef}
               type="text"
               className="w-full px-4 py-2 text-black outline-none"
               placeholder="Search ShopKart..."
               onFocus={handleSearchFocus}
               onBlur={handleSearchBlur}
+              onChange={(e) => setKeyword(e.target.value)} // Bind input
+              value={keyword}
             />
-            <button className="bg-amazon-yellow text-amazon-blue p-2 hover:bg-yellow-500 transition-colors">
+            <button
+              type="submit"
+              className="bg-amazon-yellow text-amazon-blue p-2 hover:bg-yellow-500"
+            >
               <Search size={22} />
             </button>
-          </div>
+          </form>
         </div>
 
-        {/* 3. Right Icons (User & Cart) */}
+        {/* Right Icons (Keep existing code exactly as it was) */}
         <div className="flex items-center gap-6">
+          {/* ... (Copy your existing User/Cart logic here) ... */}
+          {/* If you need the full code block for this section let me know, 
+               otherwise keep what you had for User/Cart/Orders */}
+
+          {/* User Section */}
           {user ? (
             <div className="hidden md:flex flex-col text-xs leading-tight cursor-pointer group relative">
               <span className="text-gray-200">
                 Hello, {user.name.split(" ")[0]}
-              </span>{" "}
-              {/* Shows first name */}
+              </span>
               <span className="font-bold text-sm">Account & Lists</span>
-              {/* Dropdown for Logout */}
               <div className="absolute top-full right-0 mt-2 w-48 bg-white text-black rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-2 z-50">
                 <button
                   onClick={logout}
@@ -102,7 +109,6 @@ const Navbar = () => {
             </Link>
           )}
 
-          {/* Returns & Orders */}
           <Link
             to="/myorders"
             className="hidden md:flex flex-col text-xs leading-tight cursor-pointer hover:underline"
@@ -111,7 +117,6 @@ const Navbar = () => {
             <span className="font-bold text-sm">& Orders</span>
           </Link>
 
-          {/* Cart Icon */}
           <Link
             to="/cart"
             className="flex items-end gap-1 relative hover:text-amazon-yellow transition-colors"
@@ -124,20 +129,6 @@ const Navbar = () => {
             </div>
             <span className="font-bold hidden md:block mt-2">Cart</span>
           </Link>
-        </div>
-      </div>
-
-      {/* Mobile Search Bar (Only visible on small screens) */}
-      <div className="md:hidden px-4 pb-3">
-        <div className="flex items-center bg-white rounded-md overflow-hidden w-full">
-          <input
-            type="text"
-            className="w-full px-4 py-2 text-black outline-none"
-            placeholder="Search ShopKart..."
-          />
-          <button className="bg-amazon-yellow text-amazon-blue p-2">
-            <Search size={22} />
-          </button>
         </div>
       </div>
     </nav>

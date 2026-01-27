@@ -2,8 +2,27 @@ import Product from '../models/product.model.js';
 
 export const getProducts = async (req, res) => {
     try {
-        const products = await Product.find({});
-        res.json(products);
+        // 1. Search Logic
+        const keyword = req.query.keyword ? {
+            name: {
+                $regex: req.query.keyword,
+                $options: 'i', // Case insensitive
+            },
+        } : {};
+
+        // 2. Pagination Logic
+        const pageSize = 8; // Products per page
+        const page = Number(req.query.pageNumber) || 1;
+
+        // 3. Count Total (for pagination buttons)
+        const count = await Product.countDocuments({ ...keyword });
+
+        // 4. Fetch Products
+        const products = await Product.find({ ...keyword })
+            .limit(pageSize)
+            .skip(pageSize * (page - 1));
+
+        res.json({ products, page, pages: Math.ceil(count / pageSize) });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -12,7 +31,7 @@ export const getProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
-        
+
         if (product) {
             res.json(product);
         } else {
@@ -28,7 +47,7 @@ export const createProduct = async (req, res) => {
         const product = new Product({
             name: 'Sample Name',
             price: 0,
-            user: req.user._id, 
+            user: req.user._id,
             image: '/images/sample.jpg',
             brand: 'Sample Brand',
             category: 'Sample Category',
