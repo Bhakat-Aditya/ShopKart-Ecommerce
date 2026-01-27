@@ -10,6 +10,8 @@ export const addOrderItems = async (req, res) => {
         taxPrice,
         shippingPrice,
         totalPrice,
+        isPaid,
+        paymentResult,
     } = req.body;
 
     if (orderItems && orderItems.length === 0) {
@@ -29,12 +31,13 @@ export const addOrderItems = async (req, res) => {
             taxPrice,
             shippingPrice,
             totalPrice,
+            isPaid: isPaid || false,
+            paidAt: isPaid ? Date.now() : null,
+            paymentResult: paymentResult || {},
         });
 
         const createdOrder = await order.save();
 
-        // --- 2. NEW LOGIC: DECREMENT STOCK ---
-        // Loop through each item and update the Product database
         for (const item of orderItems) {
             const product = await Product.findById(item._id);
             if (product) {
@@ -42,13 +45,10 @@ export const addOrderItems = async (req, res) => {
                 await product.save();
             }
         }
-        // -------------------------------------
-
         res.status(201).json(createdOrder);
     }
 };
 
-// ... keep getOrderById and getMyOrders as they are ...
 export const getOrderById = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id).populate('user', 'name email');
@@ -89,7 +89,7 @@ export const cancelOrder = async (req, res) => {
             // 1. Mark as Cancelled
             order.isCancelled = true;
             order.cancelledAt = Date.now();
-            
+
             // 2. RESTORE STOCK (Loop through items and add quantity back)
             for (const item of order.orderItems) {
                 const product = await Product.findById(item.product);

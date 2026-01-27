@@ -13,66 +13,119 @@ const PlaceOrder = () => {
   const [error, setError] = useState(null);
 
   // --- 1. Calculations ---
-  const addDecimals = (num) => {
-    return (Math.round(num * 100) / 100).toFixed(2);
-  };
-
+  const addDecimals = (num) => (Math.round(num * 100) / 100).toFixed(2);
   const itemsPrice = Number(
     cartItems.reduce((acc, item) => acc + item.price * item.qty, 0),
   );
-
-  // DELIVERY LOGIC:
-  // 1. Base Shipping: ₹0 if total > 500, else ₹75
   const baseShipping = itemsPrice > 500 ? 0 : 75;
-
-  // 2. Express Fee: ₹85 if 'isExpress' is true, else 0
   const expressCost = shippingAddress.isExpress ? 85 : 0;
-
-  // 3. Final Shipping Cost
   const shippingPrice = baseShipping + expressCost;
-
-  const taxPrice = Number((0.18 * itemsPrice).toFixed(2)); // 18% GST
-
+  const taxPrice = Number((0.18 * itemsPrice).toFixed(2));
   const totalPrice = (itemsPrice + shippingPrice + taxPrice).toFixed(2);
 
-  // --- 2. Redirect if missing data ---
   useEffect(() => {
-    if (!shippingAddress.address) {
-      navigate("/shipping");
-    } else if (cartItems.length === 0) {
-      navigate("/cart");
-    }
+    if (!shippingAddress.address) navigate("/shipping");
+    else if (cartItems.length === 0) navigate("/cart");
   }, [shippingAddress, cartItems, navigate]);
 
-  // --- 3. Place Order Handler ---
+  // --- RAZORPAY HELPER: Load Script ---
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  // --- MAIN HANDLER ---
   const placeOrderHandler = async () => {
     try {
       setLoading(true);
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      };
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
 
-      const { data } = await axios.post(
-        "/api/orders",
-        {
-          orderItems: cartItems,
-          shippingAddress: shippingAddress,
-          paymentMethod: "Stripe",
-          itemsPrice: itemsPrice,
-          shippingPrice: shippingPrice,
-          taxPrice: taxPrice,
-          totalPrice: totalPrice,
-        },
+      // 1. Load Script
+      const res = await loadRazorpayScript();
+      if (!res) {
+        alert("Razorpay SDK failed to load. Are you online?");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Create Razorpay Order (Backend)
+      const { data: razorpayOrder } = await axios.post(
+        "/api/payment/create-order",
+        { amount: totalPrice },
         config,
       );
 
-      alert("Order Placed Successfully!");
-      navigate(`/order/${data._id}`);
+      // 3. Get Key ID
+      const {
+        data: { key },
+      } = await axios.get("/api/payment/get-key");
+
+      // 4. Options for Popup
+      const options = {
+        key: key,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: "ShopKart",
+        description: "Complete your purchase",
+        image: "https://cdn-icons-png.flaticon.com/512/4290/4290854.png", // ShopKart Logo
+        order_id: razorpayOrder.id,
+
+        // --- ON SUCCESS CALLBACK ---
+        handler: async function (response) {
+          try {
+            // 5. Save Order to Database (Verified & Paid)
+            const { data } = await axios.post(
+              "/api/orders",
+              {
+                orderItems: cartItems,
+                shippingAddress: shippingAddress,
+                paymentMethod: "Razorpay",
+                itemsPrice: itemsPrice,
+                shippingPrice: shippingPrice,
+                taxPrice: taxPrice,
+                totalPrice: totalPrice,
+                isPaid: true, // Mark as Paid!
+                paymentResult: {
+                  id: response.razorpay_payment_id,
+                  status: "success",
+                  update_time: new Date().toISOString(),
+                  email_address: user.email,
+                },
+              },
+              config,
+            );
+            navigate(`/order/${data._id}`);
+          } catch (error) {
+            alert(
+              "Payment Successful, but failed to save order. Contact Support.",
+            );
+            console.error(error);
+          }
+        },
+        prefill: {
+          name: user.name,
+          email: user.email,
+          contact: "9999999999", // Test Number
+        },
+        notes: {
+          address: "ShopKart Corporate Office",
+        },
+        theme: {
+          color: "#febd69", // Amazon Yellow
+        },
+      };
+
+      // 5. Open Popup
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+      setLoading(false);
     } catch (err) {
       setError(err.response?.data?.message || err.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -88,9 +141,8 @@ const PlaceOrder = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Details */}
+        {/* Left: Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Shipping Info */}
           <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
             <h2 className="text-lg font-bold mb-3 uppercase tracking-wide text-gray-700">
               Shipping
@@ -100,62 +152,42 @@ const PlaceOrder = () => {
               {shippingAddress.address}, {shippingAddress.city},{" "}
               {shippingAddress.postalCode}, {shippingAddress.country}
             </p>
-            {/* Show Delivery Method Badge */}
-            <div className="flex gap-2">
-              <span
-                className={`px-2 py-1 rounded text-xs font-bold ${baseShipping === 0 ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
-              >
-                {baseShipping === 0
-                  ? "Free Standard Delivery"
-                  : "Standard Delivery"}
-              </span>
-              {shippingAddress.isExpress && (
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">
-                  Express (+₹85)
-                </span>
-              )}
-            </div>
           </div>
 
-          {/* Order Items */}
           <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
             <h2 className="text-lg font-bold mb-3 uppercase tracking-wide text-gray-700">
               Order Items
             </h2>
-            {cartItems.length === 0 ? (
-              <p>Your cart is empty</p>
-            ) : (
-              <div className="space-y-4">
-                {cartItems.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between border-b border-gray-100 pb-2 last:border-0"
-                  >
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-12 h-12 object-contain rounded"
-                      />
-                      <Link
-                        to={`/product/${item._id}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {item.name}
-                      </Link>
-                    </div>
-                    <div className="text-gray-600">
-                      {item.qty} x ₹{item.price} ={" "}
-                      <strong>₹{item.qty * item.price}</strong>
-                    </div>
+            <div className="space-y-4">
+              {cartItems.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between border-b border-gray-100 pb-2 last:border-0"
+                >
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-12 h-12 object-contain rounded"
+                    />
+                    <Link
+                      to={`/product/${item._id}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      {item.name}
+                    </Link>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className="text-gray-600">
+                    {item.qty} x ₹{item.price} ={" "}
+                    <strong>₹{item.qty * item.price}</strong>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Right Column: Order Summary */}
+        {/* Right: Summary */}
         <div className="lg:col-span-1">
           <div className="bg-white p-6 rounded shadow-sm border border-gray-200 sticky top-24">
             <h2 className="text-lg font-bold mb-4 text-center border-b pb-2">
@@ -167,8 +199,6 @@ const PlaceOrder = () => {
                 <span>Items:</span>
                 <span>₹{itemsPrice}</span>
               </div>
-
-              {/* Detailed Shipping Breakdown */}
               <div className="flex justify-between text-gray-600">
                 <span>Base Delivery:</span>
                 <span>{baseShipping === 0 ? "FREE" : `₹${baseShipping}`}</span>
@@ -179,12 +209,10 @@ const PlaceOrder = () => {
                   <span>+₹85</span>
                 </div>
               )}
-
               <div className="flex justify-between">
                 <span>Tax (18%):</span>
                 <span>₹{taxPrice}</span>
               </div>
-
               <div className="border-t pt-2 mt-2 flex justify-between font-bold text-lg text-red-700">
                 <span>Order Total:</span>
                 <span>₹{totalPrice}</span>
@@ -197,7 +225,11 @@ const PlaceOrder = () => {
               disabled={cartItems.length === 0 || loading}
               onClick={placeOrderHandler}
             >
-              {loading ? <Loader className="animate-spin" /> : "Place Order"}
+              {loading ? (
+                <Loader className="animate-spin" />
+              ) : (
+                "Pay & Place Order"
+              )}
             </button>
           </div>
         </div>
