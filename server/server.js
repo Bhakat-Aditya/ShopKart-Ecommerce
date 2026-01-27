@@ -6,6 +6,7 @@ import connectDb from './config/db.config.js';
 // import routes
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
+import orderRoutes from './routes/order.routes.js';
 
 
 
@@ -35,6 +36,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 // Product route
 app.use('/api/products', productRoutes);
+// Order route
+app.use('/api/orders', orderRoutes);
 
 
 

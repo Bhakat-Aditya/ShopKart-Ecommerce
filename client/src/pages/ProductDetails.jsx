@@ -20,7 +20,9 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [qty, setQty] = useState(1);
-
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
+  
   // Refs for animation
   const imageRef = useRef(null);
   const infoRef = useRef(null);
@@ -74,8 +76,6 @@ const ProductDetails = () => {
   if (!product)
     return <div className="text-center py-20">Product not found</div>;
 
-  const { addToCart } = useCart();
-  const navigate = useNavigate();
 
   const handleAddToCart = () => {
     addToCart(product, qty);

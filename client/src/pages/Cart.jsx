@@ -92,7 +92,10 @@ const Cart = () => {
             </h2>
             <p className="text-3xl font-bold mb-6">₹{totalPrice}</p>
 
-            <button className="w-full bg-amazon-yellow hover:bg-yellow-400 text-amazon-blue font-bold py-3 rounded-md shadow-sm transition-colors">
+            <button
+              onClick={() => navigate("/shipping")}
+              className="w-full bg-amazon-yellow hover:bg-yellow-400 text-amazon-blue font-bold py-3 rounded-md shadow-sm transition-colors"
+            >
               Proceed to Checkout
             </button>
           </div>

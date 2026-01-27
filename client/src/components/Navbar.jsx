@@ -1,36 +1,37 @@
-import { ShoppingCart, User, Search, Menu } from "lucide-react";
+import { ShoppingCart, User, Search, Menu, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
-  // Refs for GSAP animations
+  const { cartItems } = useCart();
+  const { user, logout } = useAuth();
   const searchBarRef = useRef(null);
   const searchInputRef = useRef(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // GSAP Animation: Expand Search Bar on Focus
   const { contextSafe } = useGSAP();
 
   const handleSearchFocus = contextSafe(() => {
     gsap.to(searchBarRef.current, {
-      width: "100%", // Expands to fill available space
+      width: "100%",
       duration: 0.4,
       ease: "power2.out",
-      boxShadow: "0px 0px 10px rgba(254, 189, 105, 0.5)", // Amazon yellow glow
+      boxShadow: "0px 0px 10px rgba(254, 189, 105, 0.5)",
     });
   });
 
   const handleSearchBlur = contextSafe(() => {
     gsap.to(searchBarRef.current, {
-      width: "80%", // Shrinks back
+      width: "80%",
       duration: 0.4,
       ease: "power2.in",
       boxShadow: "none",
     });
   });
-  const { cartItems } = useCart();
 
   return (
     <nav className="bg-amazon-blue text-white sticky top-0 z-50 shadow-md">
@@ -74,11 +75,32 @@ const Navbar = () => {
 
         {/* 3. Right Icons (User & Cart) */}
         <div className="flex items-center gap-6">
-          {/* Sign In / Profile */}
-          <div className="hidden md:flex flex-col text-xs leading-tight cursor-pointer hover:underline">
-            <span className="text-gray-200">Hello, Sign in</span>
-            <span className="font-bold text-sm">Account & Lists</span>
-          </div>
+          {user ? (
+            <div className="hidden md:flex flex-col text-xs leading-tight cursor-pointer group relative">
+              <span className="text-gray-200">
+                Hello, {user.name.split(" ")[0]}
+              </span>{" "}
+              {/* Shows first name */}
+              <span className="font-bold text-sm">Account & Lists</span>
+              {/* Dropdown for Logout */}
+              <div className="absolute top-full right-0 mt-2 w-48 bg-white text-black rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-2 z-50">
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100 rounded text-red-600 font-bold"
+                >
+                  <LogOut size={16} /> Logout
+                </button>
+              </div>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="hidden md:flex flex-col text-xs leading-tight cursor-pointer hover:underline"
+            >
+              <span className="text-gray-200">Hello, Sign in</span>
+              <span className="font-bold text-sm">Account & Lists</span>
+            </Link>
+          )}
 
           {/* Returns & Orders */}
           <div className="hidden md:flex flex-col text-xs leading-tight cursor-pointer hover:underline">
