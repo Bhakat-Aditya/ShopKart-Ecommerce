@@ -8,12 +8,14 @@ import Register from "./pages/Register";
 import Shipping from "./pages/Shipping";
 import PlaceOrder from "./pages/PlaceOrder";
 import MyOrders from "./pages/MyOrders";
-import AdminRoute from "./components/AdminRoute";
+import OrderDetails from "./pages/OrderDetails";
+
+// Seller Imports
+import SellerRoute from "./components/SellerRoute";
+import SellerDashboard from "./pages/seller/SellerDashboard";
+import SellerRegister from "./pages/seller/SellerRegister";
 import ProductList from "./pages/admin/ProductList";
 import ProductEdit from "./pages/admin/ProductEdit";
-import OrderDetails from "./pages/OrderDetails";
-import SellerRegister from "./pages/seller/SellerRegister";
-import SellerDashboard from "./pages/seller/SellerDashboard";
 
 function App() {
   return (
@@ -21,6 +23,7 @@ function App() {
       <Navbar />
       <main className="flex-grow">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/search/:keyword" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetails />} />
@@ -31,12 +34,17 @@ function App() {
           <Route path="/placeorder" element={<PlaceOrder />} />
           <Route path="/myorders" element={<MyOrders />} />
           <Route path="/order/:id" element={<OrderDetails />} />
-          <Route path="/admin" element={<AdminRoute />}>
-            <Route path="productlist" element={<ProductList />} />
+
+          {/* Seller Registration */}
+          <Route path="/seller/register" element={<SellerRegister />} />
+
+          {/* Protected Seller Area */}
+          <Route path="/seller" element={<SellerRoute />}>
+            <Route path="dashboard" element={<SellerDashboard />} />
+            <Route path="products" element={<ProductList />} />{" "}
+            {/* List "My" Products */}
             <Route path="product/:id/edit" element={<ProductEdit />} />
           </Route>
-          <Route path="/seller/register" element={<SellerRegister />} />
-          <Route path="/seller/dashboard" element={<SellerDashboard />} />
         </Routes>
       </main>
       <footer className="bg-amazon-light text-white p-4 text-center mt-auto">
