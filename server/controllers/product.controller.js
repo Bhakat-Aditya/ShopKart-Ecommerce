@@ -1,31 +1,33 @@
 import Product from '../models/product.model.js';
 
-// @desc    Fetch all products (Public - For Homepage/Search)
+// @desc    Fetch all products (Public)
 export const getProducts = async (req, res) => {
     try {
         const keyword = req.query.keyword ? { name: { $regex: req.query.keyword, $options: 'i' } } : {};
         const category = req.query.category ? { category: req.query.category } : {};
 
+        // --- FIX: Only show Published products on Home Page ---
+        const filter = { ...keyword, ...category, isPublished: true };
+
         const pageSize = Number(req.query.limit) || 8;
         const page = Number(req.query.pageNumber) || 1;
-        const count = await Product.countDocuments({ ...keyword, ...category });
+        const count = await Product.countDocuments(filter);
 
-        const products = await Product.find({ ...keyword, ...category })
+        const products = await Product.find(filter)
             .limit(pageSize)
             .skip(pageSize * (page - 1))
             .sort({ createdAt: -1 });
 
         res.json({ products, page, pages: Math.ceil(count / pageSize) });
     } catch (error) {
+        console.error("GET PRODUCTS ERROR:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
-// @desc    Get Logged-in Seller's Products (NEW)
-// @route   GET /api/products/myproducts
+// @desc    Get Seller's Products (Shows Drafts & Published)
 export const getMyProducts = async (req, res) => {
     try {
-        // Only find products where "user" matches the logged-in ID
         const products = await Product.find({ user: req.user._id }).sort({ createdAt: -1 });
         res.json(products);
     } catch (error) {
@@ -33,10 +35,10 @@ export const getMyProducts = async (req, res) => {
     }
 };
 
-// @desc    Get Single Product
 export const getProductById = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        // ADD .populate('user', 'name seller')
+        const product = await Product.findById(req.params.id).populate('user', 'name seller'); 
         if (product) {
             res.json(product);
         } else {
@@ -47,19 +49,20 @@ export const getProductById = async (req, res) => {
     }
 };
 
-// @desc    Create a Product
+// @desc    Create a Product (Starts as DRAFT)
 export const createProduct = async (req, res) => {
     try {
         const product = new Product({
             name: 'Sample Product',
             price: 0,
-            user: req.user._id, // Owner is the Seller
+            user: req.user._id,
             image: '/images/sample.jpg',
             brand: 'Sample Brand',
             category: 'Sample Category',
             countInStock: 0,
             numReviews: 0,
             description: 'Sample description',
+            isPublished: false // <--- HIDDEN BY DEFAULT
         });
         const createdProduct = await product.save();
         res.status(201).json(createdProduct);
@@ -68,14 +71,13 @@ export const createProduct = async (req, res) => {
     }
 };
 
-// @desc    Update a Product
+// @desc    Update a Product (PUBLISHES IT)
 export const updateProduct = async (req, res) => {
     try {
         const { name, price, description, image, brand, category, countInStock } = req.body;
         const product = await Product.findById(req.params.id);
 
         if (product) {
-            // SECURITY CHECK: Does this product belong to the logged-in user?
             if (product.user.toString() !== req.user._id.toString()) {
                 return res.status(401).json({ message: "Not authorized to edit this product" });
             }
@@ -88,6 +90,9 @@ export const updateProduct = async (req, res) => {
             product.category = category;
             product.countInStock = countInStock;
 
+            // --- FIX: Mark as Published when Seller updates it ---
+            product.isPublished = true;
+
             const updatedProduct = await product.save();
             res.json(updatedProduct);
         } else {
@@ -98,17 +103,14 @@ export const updateProduct = async (req, res) => {
     }
 };
 
-// @desc    Delete a Product
+// ... keep deleteProduct and createProductReview exactly as they were ...
 export const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
-
         if (product) {
-            // SECURITY CHECK: Does this product belong to the logged-in user?
             if (product.user.toString() !== req.user._id.toString()) {
-                return res.status(401).json({ message: "Not authorized to delete this product" });
+                return res.status(401).json({ message: "Not authorized" });
             }
-
             await product.deleteOne();
             res.json({ message: 'Product removed' });
         } else {
@@ -119,7 +121,6 @@ export const deleteProduct = async (req, res) => {
     }
 };
 
-// @desc    Create Review
 export const createProductReview = async (req, res) => {
     try {
         const { rating, comment } = req.body;

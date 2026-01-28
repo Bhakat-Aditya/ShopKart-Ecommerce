@@ -104,7 +104,7 @@ const ProductEdit = () => {
           console.error("Could not delete draft", error);
         }
       }
-      navigate("/admin/productlist");
+      navigate("/admin/products");
     }
   };
 
@@ -140,7 +140,7 @@ const ProductEdit = () => {
         },
         config,
       );
-      navigate("/admin/productlist");
+      navigate("/seller/products");
     } catch (error) {
       alert("Update failed");
     } finally {

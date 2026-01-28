@@ -17,6 +17,7 @@ import SellerRegister from "./pages/seller/SellerRegister";
 import ProductList from "./pages/admin/ProductList";
 import ProductEdit from "./pages/admin/ProductEdit";
 import SellerOrders from "./pages/seller/SellerOrders";
+import SellerShop from "./pages/SellerShop";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path="/myorders" element={<MyOrders />} />
           <Route path="/order/:id" element={<OrderDetails />} />
           <Route path="orders" element={<SellerOrders />} />
+          <Route path="/shop/:id" element={<SellerShop />} />
 
           {/* Seller Registration */}
           <Route path="/seller/register" element={<SellerRegister />} />

@@ -82,3 +82,30 @@ export const registerSeller = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+export const getSellerProfile = async (req, res) => {
+    try {
+        // 1. Get Seller Info (Exclude sensitive data like password/email)
+        const user = await User.findById(req.params.id).select('name seller createdAt');
+
+        if (!user || !user.isSeller) {
+            return res.status(404).json({ message: 'Seller not found' });
+        }
+
+        // 2. Get Seller's Active Products
+        const products = await Product.find({ user: req.params.id, isPublished: true });
+
+        res.json({
+            seller: {
+                id: user._id,
+                name: user.seller.name || user.name,
+                logo: user.seller.logo,
+                description: user.seller.description,
+                joined: user.createdAt
+            },
+            products
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

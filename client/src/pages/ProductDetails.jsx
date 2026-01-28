@@ -215,7 +215,18 @@ const ProductDetails = () => {
               <span className="font-medium">1 Year Warranty</span>
             </div>
           </div>
-
+          {/* --- SOLD BY SECTION --- */}
+          <div className="text-sm text-gray-500 py-2">
+            Sold by:{" "}
+            <Link
+              to={`/shop/${product.user?._id}`}
+              className="text-blue-600 hover:underline font-bold"
+            >
+              {product.user?.seller?.name ||
+                product.user?.name ||
+                "Unknown Seller"}
+            </Link>
+          </div>
           <div className="py-2">
             <h3 className="font-bold text-gray-800 mb-2 text-lg">
               About this item

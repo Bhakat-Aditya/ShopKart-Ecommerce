@@ -2,18 +2,16 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
-import { Edit, Trash2, Plus } from "lucide-react";
+import { Edit, Trash2, Plus, Eye, EyeOff } from "lucide-react"; // Added Eye icons
 
 const ProductList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
 
-  // FETCH MY PRODUCTS
   const fetchProducts = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      // Fetch only logged-in seller's products
       const { data } = await axios.get("/api/products/myproducts", config);
       setProducts(data);
     } catch (error) {
@@ -35,7 +33,7 @@ const ProductList = () => {
       try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
         await axios.delete(`/api/products/${id}`, config);
-        fetchProducts(); // Refresh list
+        fetchProducts();
       } catch (error) {
         alert(error.response?.data?.message || "Delete failed");
       }
@@ -46,7 +44,7 @@ const ProductList = () => {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       const { data } = await axios.post("/api/products", {}, config);
-      navigate(`/seller/product/${data._id}/edit`); // Redirect to edit
+      navigate(`/seller/product/${data._id}/edit`);
     } catch (error) {
       alert(error.response?.data?.message || "Create failed");
     }
@@ -84,8 +82,9 @@ const ProductList = () => {
                 Stock
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Category
-              </th>
+                Status
+              </th>{" "}
+              {/* New Col */}
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                 Actions
               </th>
@@ -106,8 +105,17 @@ const ProductList = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {product.countInStock}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {product.category}
+                {/* --- STATUS BADGE --- */}
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  {product.isPublished ? (
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 flex items-center gap-1 w-fit">
+                      <Eye size={12} /> Live
+                    </span>
+                  ) : (
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 flex items-center gap-1 w-fit">
+                      <EyeOff size={12} /> Draft
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Link
