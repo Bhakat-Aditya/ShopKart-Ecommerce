@@ -103,3 +103,33 @@ export const getSellerOrders = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+export const deleteOrder = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (order) {
+            // Check ownership
+            if (order.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+                return res.status(401).json({ message: "Not authorized to cancel this order" });
+            }
+
+            // Restore Stock (Optional but recommended)
+            // If you want to put items back in stock when cancelled:
+            for (const item of order.orderItems) {
+                const product = await Product.findById(item.product);
+                if (product) {
+                    product.countInStock += item.qty;
+                    await product.save();
+                }
+            }
+
+            await order.deleteOne();
+            res.json({ message: 'Order Cancelled Successfully' });
+        } else {
+            res.status(404).json({ message: 'Order not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

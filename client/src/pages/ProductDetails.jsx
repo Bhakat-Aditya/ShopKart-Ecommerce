@@ -12,6 +12,7 @@ import {
   Minus,
   AlertCircle,
   RefreshCw,
+  Check,
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -25,8 +26,8 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [added, setAdded] = useState(false); // New state for visual feedback
 
-  // Review State
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
@@ -34,7 +35,6 @@ const ProductDetails = () => {
   const [qty, setQty] = useState(1);
   const [isLiveUpdating, setIsLiveUpdating] = useState(false);
 
-  // 1. Define Fetch Logic
   const fetchProduct = useCallback(
     async (isBackground = false) => {
       try {
@@ -54,7 +54,6 @@ const ProductDetails = () => {
     [id],
   );
 
-  // 2. Initial Load & Polling
   useEffect(() => {
     fetchProduct(false);
     const interval = setInterval(() => {
@@ -63,14 +62,15 @@ const ProductDetails = () => {
     return () => clearInterval(interval);
   }, [fetchProduct]);
 
-  // Smart Stock Logic
   const cartItem = cartItems.find((item) => item._id === id);
   const qtyInCart = cartItem ? cartItem.qty : 0;
   const availableToAdd = product ? product.countInStock - qtyInCart : 0;
 
   const handleAddToCart = () => {
     addToCart(product, qty);
-    navigate("/cart");
+    setAdded(true); // Show "Added" feedback
+    setTimeout(() => setAdded(false), 2000); // Hide after 2 seconds
+    // navigate("/cart"); <--- REMOVED THIS LINE
   };
 
   const increaseQty = () => {
@@ -91,13 +91,11 @@ const ProductDetails = () => {
           Authorization: `Bearer ${user.token}`,
         },
       };
-
       await axios.post(
         `/api/products/${id}/reviews`,
         { rating, comment },
         config,
       );
-
       alert("Review Submitted!");
       setReviewLoading(false);
       setRating(0);
@@ -210,7 +208,6 @@ const ProductDetails = () => {
             </div>
           </div>
 
-          {/* --- ✅ FIXED SOLD BY SECTION --- */}
           <div className="text-sm text-gray-500 py-2">
             Sold by:{" "}
             <Link
@@ -222,7 +219,6 @@ const ProductDetails = () => {
                 "View Seller Shop"}
             </Link>
           </div>
-          {/* ------------------------------- */}
 
           <div className="py-2">
             <h3 className="font-bold text-gray-800 mb-2 text-lg">
@@ -290,27 +286,33 @@ const ProductDetails = () => {
             <button
               onClick={handleAddToCart}
               disabled={availableToAdd === 0}
-              className={`w-full flex items-center justify-center py-3.5 px-4 rounded-full shadow-md text-base font-bold text-amazon-blue transition-all transform active:scale-95 ${availableToAdd > 0 ? "bg-amazon-yellow hover:bg-yellow-400 cursor-pointer" : "bg-gray-200 cursor-not-allowed text-gray-400 shadow-none"}`}
+              className={`w-full flex items-center justify-center py-3.5 px-4 rounded-full shadow-md text-base font-bold text-white transition-all transform active:scale-95 ${availableToAdd > 0 ? (added ? "bg-green-600" : "bg-amazon-yellow text-amazon-blue hover:bg-yellow-400") : "bg-gray-200 cursor-not-allowed text-gray-400 shadow-none"}`}
             >
-              <ShoppingCart size={20} className="mr-2" />
-              {availableToAdd > 0 ? "Add to Cart" : "Unavailable"}
+              {added ? (
+                <>
+                  <Check size={20} className="mr-2" /> Added
+                </>
+              ) : (
+                <>
+                  <ShoppingCart size={20} className="mr-2" />
+                  {availableToAdd > 0 ? "Add to Cart" : "Unavailable"}
+                </>
+              )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* REVIEW SECTION */}
+      {/* REVIEWS SECTION */}
       <div className="mt-16 bg-white p-8 rounded-xl shadow-sm border border-gray-200">
         <h2 className="text-2xl font-bold mb-6 text-amazon-blue">
           Customer Reviews
         </h2>
-
         {(!product.reviews || product.reviews.length === 0) && (
           <div className="bg-blue-50 text-blue-700 p-4 rounded mb-6 font-medium">
             No Reviews Yet. Be the first!
           </div>
         )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           <div className="space-y-8">
             {(product.reviews || []).map((review) => (
@@ -345,7 +347,6 @@ const ProductDetails = () => {
               </div>
             ))}
           </div>
-
           <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 h-fit">
             <h3 className="text-xl font-bold mb-4">Write a Review</h3>
             {user ? (

@@ -16,35 +16,62 @@ const ProductEdit = () => {
   const [countInStock, setCountInStock] = useState(0);
   const [description, setDescription] = useState("");
 
-  // --- SMART PRICE STATES ---
-  const [mrp, setMrp] = useState(0); // Base Price
-  const [price, setPrice] = useState(0); // Selling Price
-  const [discPercent, setDiscPercent] = useState(0); // Discount %
-  const [discFlat, setDiscFlat] = useState(0); // Discount ₹
-  // --------------------------
+  // Smart Price States
+  const [mrp, setMrp] = useState(0);
+  const [price, setPrice] = useState(0);
+  const [discPercent, setDiscPercent] = useState(0);
+  const [discFlat, setDiscFlat] = useState(0);
 
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // --- AMAZON-STYLE CATEGORIES ---
+  const categories = [
+    "Mobiles",
+    "Computers",
+    "TV, Audio & Cameras",
+    "Appliances",
+    "Fashion",
+    "Home & Kitchen",
+    "Beauty & Health",
+    "Sports & Fitness",
+    "Toys & Baby Products",
+    "Books",
+    "Video Games",
+    "Automotive",
+    "Tools & Home Improvement",
+    "Pet Supplies",
+    "Grocery & Gourmet Foods",
+    "Office Products",
+  ];
+  // -------------------------------
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const { data } = await axios.get(`/api/products/${id}`);
-        setName(data.name || "");
-        setImage(data.image || "");
-        setBrand(data.brand || "");
-        setCategory(data.category || "");
-        setCountInStock(data.countInStock || 0);
-        setDescription(data.description || "");
 
-        // Load Pricing
+        setName(data.name === "New Product Name" ? "" : data.name);
+        setBrand(data.brand === "Brand Name" ? "" : data.brand);
+
+        // If the category from DB is not in our list, add it (or default to empty)
+        setCategory(data.category === "Category" ? "" : data.category);
+
+        setDescription(
+          data.description === "Please add a description."
+            ? ""
+            : data.description,
+        );
+        setImage(data.image === "/images/sample.jpg" ? "" : data.image);
+
+        setCountInStock(data.countInStock || 0);
+
         const serverPrice = data.price || 0;
-        const serverMrp = data.mrp || serverPrice; // If no MRP, assume MRP = Price
+        const serverMrp = data.mrp || serverPrice;
 
         setPrice(serverPrice);
         setMrp(serverMrp);
 
-        // Calculate Initials
         if (serverMrp > 0) {
           const flat = serverMrp - serverPrice;
           const percent = (flat / serverMrp) * 100;
@@ -61,13 +88,9 @@ const ProductEdit = () => {
     fetchProduct();
   }, [id]);
 
-  // --- INTERCONNECTED MATH LOGIC ---
-
   const handleMrpChange = (e) => {
     const val = Number(e.target.value);
     setMrp(val);
-    // If MRP changes, keep Selling Price same? Or keep Discount % same?
-    // Let's keep Discount % constant.
     const newFlat = (val * discPercent) / 100;
     setDiscFlat(Math.round(newFlat));
     setPrice(Math.round(val - newFlat));
@@ -76,8 +99,6 @@ const ProductEdit = () => {
   const handlePercentChange = (e) => {
     const val = Number(e.target.value);
     setDiscPercent(val);
-
-    // Update Flat & Price
     const newFlat = (mrp * val) / 100;
     setDiscFlat(Math.round(newFlat));
     setPrice(Math.round(mrp - newFlat));
@@ -86,8 +107,6 @@ const ProductEdit = () => {
   const handleFlatChange = (e) => {
     const val = Number(e.target.value);
     setDiscFlat(val);
-
-    // Update % & Price
     if (mrp > 0) {
       setDiscPercent(Math.round((val / mrp) * 100));
     }
@@ -97,16 +116,12 @@ const ProductEdit = () => {
   const handlePriceChange = (e) => {
     const val = Number(e.target.value);
     setPrice(val);
-
-    // Update % & Flat
     const newFlat = mrp - val;
     setDiscFlat(newFlat);
     if (mrp > 0) {
       setDiscPercent(Math.round((newFlat / mrp) * 100));
     }
   };
-
-  // ---------------------------------
 
   const uploadFileHandler = async (e) => {
     const file = e.target.files[0];
@@ -145,7 +160,7 @@ const ProductEdit = () => {
           mrp,
           image,
           brand,
-          category,
+          category, // Sends the selected category
           description,
           countInStock,
         },
@@ -180,21 +195,19 @@ const ProductEdit = () => {
         onSubmit={submitHandler}
         className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 space-y-6"
       >
-        {/* Name */}
         <div>
           <label className="block text-sm font-bold text-gray-700 mb-1">
             Product Name
           </label>
           <input
             type="text"
-            placeholder="Product Name"
+            placeholder="e.g. Adidas Running Shoes"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded focus:border-amazon-yellow outline-none"
           />
         </div>
 
-        {/* --- 4-WAY PRICING ROW --- */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
           <div>
             <label className="block text-xs font-bold text-gray-500 mb-1">
@@ -242,7 +255,6 @@ const ProductEdit = () => {
           </div>
         </div>
 
-        {/* Brand & Category */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">
@@ -250,25 +262,34 @@ const ProductEdit = () => {
             </label>
             <input
               type="text"
+              placeholder="e.g. Nike"
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded focus:border-amazon-yellow outline-none"
             />
           </div>
+
+          {/* --- CATEGORY DROPDOWN --- */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">
               Category
             </label>
-            <input
-              type="text"
+            <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:border-amazon-yellow outline-none"
-            />
+              className="w-full px-4 py-2 border border-gray-300 rounded focus:border-amazon-yellow outline-none bg-white"
+            >
+              <option value="">Select Category</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
           </div>
+          {/* ------------------------- */}
         </div>
 
-        {/* Stock */}
         <div>
           <label className="block text-sm font-bold text-gray-700 mb-1">
             Count In Stock
@@ -281,19 +302,18 @@ const ProductEdit = () => {
           />
         </div>
 
-        {/* Description */}
         <div>
           <label className="block text-sm font-bold text-gray-700 mb-1">
             Description
           </label>
           <textarea
+            placeholder="Describe your product features..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded focus:border-amazon-yellow outline-none h-32 resize-none"
           ></textarea>
         </div>
 
-        {/* Image Upload */}
         <div>
           <label className="block text-sm font-bold text-gray-700 mb-2">
             Image
@@ -301,6 +321,7 @@ const ProductEdit = () => {
           <div className="flex gap-4 items-center">
             <input
               type="text"
+              placeholder="Image URL or Upload"
               value={image}
               onChange={(e) => setImage(e.target.value)}
               className="flex-grow px-4 py-2 border border-gray-300 rounded outline-none"

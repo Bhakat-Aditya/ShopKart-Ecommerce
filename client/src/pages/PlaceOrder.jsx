@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
-import { Loader } from "lucide-react";
+import { Loader, CreditCard, Banknote } from "lucide-react";
 
 const PlaceOrder = () => {
   const { cartItems, shippingAddress, clearCart } = useCart();
@@ -12,7 +12,9 @@ const PlaceOrder = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Math Logic
+  // New State for Payment Method
+  const [paymentMethod, setPaymentMethod] = useState("Razorpay");
+
   const itemsPrice = cartItems.reduce(
     (acc, item) => acc + item.price * item.qty,
     0,
@@ -38,18 +40,18 @@ const PlaceOrder = () => {
     });
   };
 
-  const placeOrderHandler = async () => {
+  const handleOrderPlacement = async () => {
     try {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
 
-      // 1. Create the Order in Database FIRST (Status: Not Paid)
+      // 1. Create the Order FIRST (Default: Not Paid)
       const { data: createdOrder } = await axios.post(
         "/api/orders",
         {
           orderItems: cartItems,
           shippingAddress: shippingAddress,
-          paymentMethod: "Razorpay",
+          paymentMethod: paymentMethod, // Uses state (Razorpay or COD)
           itemsPrice: Number(itemsPrice.toFixed(2)),
           shippingPrice: Number(shippingPrice.toFixed(2)),
           taxPrice: Number(taxPrice.toFixed(2)),
@@ -58,15 +60,22 @@ const PlaceOrder = () => {
         config,
       );
 
-      // 2. Load Razorpay SDK
+      // 2. IF COD: We are done. Redirect.
+      if (paymentMethod === "COD") {
+        clearCart();
+        navigate(`/order/${createdOrder._id}`);
+        return;
+      }
+
+      // 3. IF RAZORPAY: Launch SDK
       const res = await loadRazorpayScript();
       if (!res) {
-        alert("Razorpay SDK failed to load. Are you online?");
+        alert("Razorpay SDK failed to load.");
         setLoading(false);
         return;
       }
 
-      // 3. Create Razorpay Order ID
+      // Create Payment Order on Razorpay Server
       const { data: razorpayOrder } = await axios.post(
         "/api/payment/create-order",
         { amount: totalPrice.toFixed(2) },
@@ -77,20 +86,17 @@ const PlaceOrder = () => {
         data: { key },
       } = await axios.get("/api/payment/get-key");
 
-      // 4. Open Razorpay Popup
       const options = {
         key: key,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
         name: "ShopKart",
         description: "Complete your purchase",
-        image: "https://cdn-icons-png.flaticon.com/512/4290/4290854.png",
         order_id: razorpayOrder.id,
-
-        // --- PAYMENT SUCCESS HANDLER ---
+        // Handler runs ONLY after successful payment
         handler: async function (response) {
           try {
-            // 5. Update Order to PAID in Database
+            // 4. Update the existing order to PAID
             await axios.put(
               `/api/orders/${createdOrder._id}/pay`,
               {
@@ -101,25 +107,15 @@ const PlaceOrder = () => {
               },
               config,
             );
-
-            // 6. Success! Clear cart & Redirect
             clearCart();
             navigate(`/order/${createdOrder._id}`);
           } catch (error) {
             console.error(error);
-            alert(
-              "Payment Successful, but server update failed. Please contact support.",
-            );
+            alert("Payment successful, but order status update failed.");
           }
         },
-        prefill: {
-          name: user.name,
-          email: user.email,
-          contact: "9999999999",
-        },
-        theme: {
-          color: "#febd69",
-        },
+        prefill: { name: user.name, email: user.email, contact: "9999999999" },
+        theme: { color: "#febd69" },
       };
 
       const paymentObject = new window.Razorpay(options);
@@ -152,6 +148,42 @@ const PlaceOrder = () => {
               {shippingAddress.postalCode}, {shippingAddress.country}
             </p>
           </div>
+
+          {/* PAYMENT METHOD SELECTION */}
+          <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
+            <h2 className="text-lg font-bold mb-4 uppercase tracking-wide text-gray-700">
+              Payment Method
+            </h2>
+            <div className="flex gap-4">
+              <label
+                className={`flex items-center gap-3 border p-4 rounded cursor-pointer w-1/2 ${paymentMethod === "Razorpay" ? "border-amazon-yellow bg-yellow-50" : "border-gray-200"}`}
+              >
+                <input
+                  type="radio"
+                  name="payment"
+                  value="Razorpay"
+                  checked={paymentMethod === "Razorpay"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <CreditCard size={24} className="text-blue-600" />
+                <span className="font-bold">Pay Online (Razorpay)</span>
+              </label>
+              <label
+                className={`flex items-center gap-3 border p-4 rounded cursor-pointer w-1/2 ${paymentMethod === "COD" ? "border-amazon-yellow bg-yellow-50" : "border-gray-200"}`}
+              >
+                <input
+                  type="radio"
+                  name="payment"
+                  value="COD"
+                  checked={paymentMethod === "COD"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <Banknote size={24} className="text-green-600" />
+                <span className="font-bold">Cash on Delivery</span>
+              </label>
+            </div>
+          </div>
+
           <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
             <h2 className="text-lg font-bold mb-3 uppercase tracking-wide text-gray-700">
               Order Items
@@ -215,14 +247,16 @@ const PlaceOrder = () => {
               </div>
             </div>
             <button
-              onClick={placeOrderHandler}
+              onClick={handleOrderPlacement}
               disabled={cartItems.length === 0 || loading}
               className="w-full bg-amazon-yellow hover:bg-yellow-400 text-amazon-blue font-bold py-3 rounded shadow-sm mt-6 transition-colors flex justify-center items-center"
             >
               {loading ? (
                 <Loader className="animate-spin" />
+              ) : paymentMethod === "COD" ? (
+                "Place Order"
               ) : (
-                "Pay & Place Order"
+                "Proceed to Pay"
               )}
             </button>
           </div>
