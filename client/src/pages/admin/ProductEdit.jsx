@@ -44,19 +44,16 @@ const ProductEdit = () => {
     "Grocery & Gourmet Foods",
     "Office Products",
   ];
-  // -------------------------------
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const { data } = await axios.get(`/api/products/${id}`);
 
+        // Logic to clear "Placeholder" text so inputs appear empty
         setName(data.name === "New Product Name" ? "" : data.name);
         setBrand(data.brand === "Brand Name" ? "" : data.brand);
-
-        // If the category from DB is not in our list, add it (or default to empty)
         setCategory(data.category === "Category" ? "" : data.category);
-
         setDescription(
           data.description === "Please add a description."
             ? ""
@@ -88,6 +85,7 @@ const ProductEdit = () => {
     fetchProduct();
   }, [id]);
 
+  // --- MATH LOGIC ---
   const handleMrpChange = (e) => {
     const val = Number(e.target.value);
     setMrp(val);
@@ -148,6 +146,16 @@ const ProductEdit = () => {
 
   const submitHandler = async (e) => {
     e.preventDefault();
+
+    // --- 1. NEW VALIDATION CHECK ---
+    if (!name || !brand || !category || !description || !image) {
+      alert(
+        "Please fill in all required fields (Name, Brand, Category, Description, Image)",
+      );
+      return;
+    }
+    // -------------------------------
+
     try {
       const config = {
         headers: { Authorization: `Bearer ${user.token}` },
@@ -160,7 +168,7 @@ const ProductEdit = () => {
           mrp,
           image,
           brand,
-          category, // Sends the selected category
+          category,
           description,
           countInStock,
         },
@@ -169,7 +177,8 @@ const ProductEdit = () => {
       navigate("/seller/products");
     } catch (error) {
       console.error(error);
-      alert("Update Failed");
+      // --- 2. SHOW EXACT SERVER ERROR ---
+      alert(error.response?.data?.message || "Update Failed");
     }
   };
 
@@ -197,7 +206,7 @@ const ProductEdit = () => {
       >
         <div>
           <label className="block text-sm font-bold text-gray-700 mb-1">
-            Product Name
+            Product Name <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -205,6 +214,7 @@ const ProductEdit = () => {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded focus:border-amazon-yellow outline-none"
+            required
           />
         </div>
 
@@ -258,7 +268,7 @@ const ProductEdit = () => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">
-              Brand
+              Brand <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -266,18 +276,19 @@ const ProductEdit = () => {
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded focus:border-amazon-yellow outline-none"
+              required
             />
           </div>
 
-          {/* --- CATEGORY DROPDOWN --- */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">
-              Category
+              Category <span className="text-red-500">*</span>
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded focus:border-amazon-yellow outline-none bg-white"
+              required
             >
               <option value="">Select Category</option>
               {categories.map((cat) => (
@@ -287,7 +298,6 @@ const ProductEdit = () => {
               ))}
             </select>
           </div>
-          {/* ------------------------- */}
         </div>
 
         <div>
@@ -304,19 +314,20 @@ const ProductEdit = () => {
 
         <div>
           <label className="block text-sm font-bold text-gray-700 mb-1">
-            Description
+            Description <span className="text-red-500">*</span>
           </label>
           <textarea
             placeholder="Describe your product features..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded focus:border-amazon-yellow outline-none h-32 resize-none"
+            required
           ></textarea>
         </div>
 
         <div>
           <label className="block text-sm font-bold text-gray-700 mb-2">
-            Image
+            Image <span className="text-red-500">*</span>
           </label>
           <div className="flex gap-4 items-center">
             <input
@@ -325,6 +336,7 @@ const ProductEdit = () => {
               value={image}
               onChange={(e) => setImage(e.target.value)}
               className="flex-grow px-4 py-2 border border-gray-300 rounded outline-none"
+              required
             />
             <label className="cursor-pointer bg-gray-100 border border-gray-300 px-4 py-2 rounded flex items-center gap-2 hover:bg-gray-200">
               <UploadCloud size={20} />{" "}

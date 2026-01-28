@@ -9,6 +9,7 @@ import Shipping from "./pages/Shipping";
 import PlaceOrder from "./pages/PlaceOrder";
 import MyOrders from "./pages/MyOrders";
 import OrderDetails from "./pages/OrderDetails";
+import Profile from "./pages/Profile";
 
 // Seller Imports
 import SellerRoute from "./components/SellerRoute";
@@ -23,7 +24,7 @@ function App() {
   return (
     <div className="min-h-screen flex flex-col font-outfit bg-gray-100">
       <Navbar />
-      <main className="flex-grow">
+      <main className="grow">
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
@@ -35,6 +36,7 @@ function App() {
           <Route path="/shipping" element={<Shipping />} />
           <Route path="/placeorder" element={<PlaceOrder />} />
           <Route path="/myorders" element={<MyOrders />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/order/:id" element={<OrderDetails />} />
           <Route path="/shop/:id" element={<SellerShop />} />
 

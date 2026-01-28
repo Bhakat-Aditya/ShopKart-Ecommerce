@@ -150,6 +150,12 @@ const Navbar = () => {
 
               <div className="absolute top-full right-0 w-48 bg-white rounded shadow-md text-gray-800 hidden group-hover:block border border-gray-200">
                 <Link
+                  to="/profile"
+                  className="block px-4 py-2 hover:bg-gray-100 text-sm"
+                >
+                  My Profile
+                </Link>
+                <Link
                   to="/myorders"
                   className="block px-4 py-2 hover:bg-gray-100 text-sm"
                 >
