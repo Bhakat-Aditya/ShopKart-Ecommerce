@@ -1,6 +1,8 @@
 import Order from '../models/order.model.js';
 import Product from '../models/product.model.js';
 import User from '../models/user.model.js';
+import sendEmail from '../utils/sendEmail.js';
+import { orderConfirmationTemplate, orderStatusTemplate } from '../utils/emailTemplates.js';
 
 // 1. Create Order
 export const addOrderItems = async (req, res) => {
@@ -33,6 +35,21 @@ export const addOrderItems = async (req, res) => {
             await product.save();
         }
     }
+
+    try {
+        const emailOrder = { ...createdOrder._doc, user: req.user };
+        await sendEmail({
+            email: req.user.email,
+            subject: `Order Confirmed: #${createdOrder._id}`,
+            html: orderConfirmationTemplate(emailOrder),
+            message: `Your order ${createdOrder._id} has been placed.`
+        });
+    } catch (error) {
+        console.error("Email Error:", error);
+        // Don't fail the order just because email failed
+    }
+    // --------------------------------------
+
     res.status(201).json(createdOrder);
 };
 
@@ -136,14 +153,27 @@ export const deleteOrder = async (req, res) => {
 
 export const updateOrderToDelivered = async (req, res) => {
     try {
-        const order = await Order.findById(req.params.id);
+        // Populate user to get email for notification
+        const order = await Order.findById(req.params.id).populate('user', 'name email');
 
         if (order) {
             order.isDelivered = true;
             order.deliveredAt = Date.now();
-            order.orderStatus = 'Delivered'; // Sync status
+            order.orderStatus = 'Delivered';
 
             const updatedOrder = await order.save();
+
+            // --- SEND EMAIL: DELIVERED ---
+            try {
+                await sendEmail({
+                    email: order.user.email,
+                    subject: `Delivered: Your ShopKart Order #${order._id}`,
+                    html: orderStatusTemplate(order, "Delivered"),
+                    message: `Your order ${order._id} has been delivered.`
+                });
+            } catch (error) { console.error("Email Error:", error); }
+            // -----------------------------
+
             res.json(updatedOrder);
         } else {
             res.status(404).json({ message: 'Order not found' });
@@ -186,19 +216,33 @@ export const getAdminStats = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
     try {
         const { status, date } = req.body;
-        const order = await Order.findById(req.params.id);
+        // Populate user to get email
+        const order = await Order.findById(req.params.id).populate('user', 'name email');
 
         if (order) {
             order.orderStatus = status;
             if (date) order.expectedDelivery = date;
 
-            // Sync with boolean flags
             if (status === 'Delivered') {
                 order.isDelivered = true;
                 order.deliveredAt = Date.now();
             }
 
             const updatedOrder = await order.save();
+
+            // --- SEND EMAIL: STATUS UPDATE (Shipped/Delivered) ---
+            if (status === "Shipped" || status === "Out for Delivery" || status === "Delivered") {
+                try {
+                    await sendEmail({
+                        email: order.user.email,
+                        subject: `Update: Your Order is ${status}`,
+                        html: orderStatusTemplate(order, status),
+                        message: `Your order status is now: ${status}`
+                    });
+                } catch (error) { console.error("Email Error:", error); }
+            }
+            // -----------------------------------------------------
+
             res.json(updatedOrder);
         } else {
             res.status(404).json({ message: 'Order not found' });
