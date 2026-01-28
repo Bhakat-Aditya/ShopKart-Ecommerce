@@ -5,7 +5,7 @@ import {
     verifyOtpAndLogin,
     addAddress,
     getAddresses,
-    updateUserProfile // <--- IMPORT THIS
+    updateUserProfile 
 } from '../controllers/auth.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 
@@ -22,5 +22,7 @@ router.put('/profile', protect, updateUserProfile);
 router.route('/address')
     .post(protect, addAddress)
     .get(protect, getAddresses);
+
+router.put('/profile', protect, updateUserProfile);
 
 export default router;

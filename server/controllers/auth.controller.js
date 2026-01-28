@@ -113,7 +113,7 @@ export const updateUserProfile = async (req, res) => {
 
         if (user) {
             user.name = req.body.name || user.name;
-
+            
             // Only update password if sent
             if (req.body.password) {
                 user.password = req.body.password;
@@ -121,14 +121,13 @@ export const updateUserProfile = async (req, res) => {
 
             const updatedUser = await user.save();
 
-            // Return new token and info
             res.json({
                 _id: updatedUser._id,
                 name: updatedUser.name,
                 email: updatedUser.email,
                 isAdmin: updatedUser.isAdmin,
                 isSeller: updatedUser.isSeller,
-                token: generateToken(updatedUser._id),
+                token: generateToken(updatedUser._id), 
             });
         } else {
             res.status(404).json({ message: 'User not found' });

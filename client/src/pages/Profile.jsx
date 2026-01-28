@@ -58,7 +58,7 @@ const Profile = () => {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
 
       const { data } = await axios.put(
-        "/api/auth/profile",
+        "/api/users/profile",
         { name, password },
         config,
       );
@@ -69,6 +69,7 @@ const Profile = () => {
       setPassword("");
       setConfirmPassword("");
     } catch (err) {
+      console.error(err);
       setLoading(false);
       setMessage(err.response?.data?.message || "Update Failed");
     }
