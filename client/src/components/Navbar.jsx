@@ -194,6 +194,14 @@ const Navbar = () => {
                 </Link>
                 {user.isAdmin && (
                   <Link
+                    to="/admin/dashboard"
+                    className="block px-4 py-2 hover:bg-gray-100 text-sm font-bold text-purple-600"
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
+                {user.isAdmin && (
+                  <Link
                     to="/admin/users"
                     className="block px-4 py-2 hover:bg-gray-100 text-sm font-bold text-purple-600"
                   >

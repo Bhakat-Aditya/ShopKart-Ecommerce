@@ -1,5 +1,6 @@
 import Order from '../models/order.model.js';
 import Product from '../models/product.model.js';
+import User from '../models/user.model.js';
 
 // 1. Create Order
 export const addOrderItems = async (req, res) => {
@@ -147,6 +148,44 @@ export const updateOrderToDelivered = async (req, res) => {
         } else {
             res.status(404).json({ message: 'Order not found' });
         }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getAdminStats = async (req, res) => {
+    try {
+        // 1. Total Orders
+        const ordersCount = await Order.countDocuments();
+
+        // 2. Total Revenue (Sum of all paid orders)
+        const salesData = await Order.aggregate([
+            { $match: { isPaid: true } },
+            { $group: { _id: null, totalSales: { $sum: "$totalPrice" } } }
+        ]);
+        const totalSales = salesData.length > 0 ? salesData[0].totalSales : 0;
+
+        // 3. Total Users & Sellers
+        const usersCount = await User.countDocuments();
+        const sellersCount = await User.countDocuments({ isSeller: true });
+
+        // 4. Total Products
+        const productsCount = await Product.countDocuments();
+
+        // 5. Recent 5 Orders (System wide)
+        const recentOrders = await Order.find({})
+            .populate("user", "name")
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        res.json({
+            ordersCount,
+            totalSales,
+            usersCount,
+            sellersCount,
+            productsCount,
+            recentOrders
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

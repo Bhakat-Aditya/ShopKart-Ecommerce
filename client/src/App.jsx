@@ -17,6 +17,7 @@ import AdminRoute from "./components/AdminRoute";
 import UserList from "./pages/admin/UserList";
 import UserEdit from "./pages/admin/UserEdit";
 import SellerProducts from "./pages/admin/SellerProducts";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 // Seller Imports
 import SellerRoute from "./components/SellerRoute";
@@ -55,6 +56,7 @@ function App() {
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute />}>
+            <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<UserList />} />
             <Route path="user/:id/edit" element={<UserEdit />} />
             <Route path="seller/:id/products" element={<SellerProducts />} />
