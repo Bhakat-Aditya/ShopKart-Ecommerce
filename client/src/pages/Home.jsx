@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+// Removed unused imports (useParams, useSearchParams)
 import ProductRow from "../components/ProductRow";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -10,9 +10,7 @@ const banners = [
 ];
 
 const Home = () => {
-  const { keyword } = useParams();
-  const [searchParams] = useSearchParams();
-  const categoryParam = searchParams.get("category") || "";
+  // --- FIX: Removed unused 'searchParams' logic here ---
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -28,23 +26,6 @@ const Home = () => {
   const prevSlide = () =>
     setCurrentSlide((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
 
-  // --- SEARCH VIEW (If searching) ---
-  if (keyword) {
-    return (
-      <div className="container mx-auto px-4 py-8 font-outfit">
-        <h2 className="text-2xl font-bold mb-6">
-          Results for "{keyword}" {categoryParam && `in ${categoryParam}`}
-        </h2>
-        <ProductRow
-          title="Search Results"
-          keyword={keyword}
-          category={categoryParam}
-        />
-      </div>
-    );
-  }
-
-  // --- HOME PAGE VIEW ---
   return (
     <div className="bg-gray-100 min-h-screen font-outfit pb-10">
       {/* HERO CAROUSEL */}
@@ -55,9 +36,7 @@ const Home = () => {
         >
           {banners.map((img, index) => (
             <div key={index} className="w-full h-full flex-shrink-0 relative">
-              {/* Gradient Mask for Amazon feel */}
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-100 z-10" />
-
               <img
                 src={img}
                 alt={`Banner ${index}`}
@@ -67,7 +46,6 @@ const Home = () => {
           ))}
         </div>
 
-        {/* Carousel Controls */}
         <button
           onClick={prevSlide}
           className="absolute left-4 top-1/4 md:top-1/3 bg-transparent hover:bg-white/20 border-2 border-transparent hover:border-white p-2 rounded focus:outline-none transition z-20 text-white"
@@ -84,15 +62,12 @@ const Home = () => {
 
       {/* --- CONTENT SECTION (Overlapping Hero) --- */}
       <div className="relative z-20 -mt-16 md:-mt-32 lg:-mt-60 space-y-6 max-w-[1500px] mx-auto">
-        {/* 1. DEALS SECTION (High Priority) */}
-        <ProductRow
-          title="Todays Deals: Up to 50% Off"
-          minDiscount={50} // Shows items with >50% discount
-        />
+        {/* 1. DEALS SECTION */}
+        <ProductRow title="Todays Deals: Up to 50% Off" minDiscount={50} />
 
         <ProductRow title="Budget Buys: Min 20% Off" minDiscount={20} />
 
-        {/* 2. CATEGORY SECTIONS (Only show if products exist) */}
+        {/* 2. CATEGORY SECTIONS */}
         <ProductRow title="Latest Mobiles" category="Mobiles" />
         <ProductRow title="Top Electronics" category="Electronics" />
         <ProductRow title="Fashion & Apparel" category="Fashion" />

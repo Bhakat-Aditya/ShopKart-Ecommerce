@@ -7,7 +7,19 @@ export const getProducts = async (req, res) => {
 
         let filter = { ...keyword, ...category, isPublished: true };
 
-        // --- NEW: Filter by Minimum Discount ---
+        // --- NEW: Price Filter ---
+        if (req.query.minPrice || req.query.maxPrice) {
+            filter.price = {};
+            if (req.query.minPrice) filter.price.$gte = Number(req.query.minPrice);
+            if (req.query.maxPrice) filter.price.$lte = Number(req.query.maxPrice);
+        }
+
+        // --- NEW: Rating Filter ---
+        if (req.query.minRating) {
+            filter.rating = { $gte: Number(req.query.minRating) };
+        }
+
+        // --- Discount Filter (Existing) ---
         if (req.query.minDiscount) {
             const minDisc = Number(req.query.minDiscount);
             filter = {
@@ -20,9 +32,8 @@ export const getProducts = async (req, res) => {
                 }
             };
         }
-        // ---------------------------------------
 
-        const pageSize = Number(req.query.limit) || 10; // Default to 10 for rows
+        const pageSize = Number(req.query.limit) || 12; // Increased to 12 for grid view
         const page = Number(req.query.pageNumber) || 1;
         const count = await Product.countDocuments(filter);
 
@@ -31,7 +42,7 @@ export const getProducts = async (req, res) => {
             .skip(pageSize * (page - 1))
             .sort({ createdAt: -1 });
 
-        res.json({ products, page, pages: Math.ceil(count / pageSize) });
+        res.json({ products, page, pages: Math.ceil(count / pageSize), count });
     } catch (error) {
         console.error("GET PRODUCTS ERROR:", error);
         res.status(500).json({ message: error.message });

@@ -18,6 +18,7 @@ import UserList from "./pages/admin/UserList";
 import UserEdit from "./pages/admin/UserEdit";
 import SellerProducts from "./pages/admin/SellerProducts";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import SearchPage from "./pages/SearchPage";
 
 // Seller Imports
 import SellerRoute from "./components/SellerRoute";
@@ -36,6 +37,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
+          <Route path="/search" element={<SearchPage />} />
           <Route path="/search/:keyword" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />

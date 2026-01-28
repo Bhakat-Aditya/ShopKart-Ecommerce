@@ -46,11 +46,17 @@ const Navbar = () => {
 
   const submitHandler = (e) => {
     e.preventDefault();
+    // Navigate to the new SearchPage with query params
     if (keyword.trim()) {
-      navigate(`/search/${keyword}?category=${category}`);
-      setIsMenuOpen(false); // Close menu on search
+      navigate(`/search?keyword=${keyword}&category=${category}`);
+      setIsMenuOpen(false);
     } else {
-      navigate("/");
+      // If no keyword but category selected, go to search page too
+      if (category) {
+        navigate(`/search?category=${category}`);
+      } else {
+        navigate("/");
+      }
     }
   };
 
@@ -205,7 +211,7 @@ const Navbar = () => {
                     to="/admin/users"
                     className="block px-4 py-2 hover:bg-gray-100 text-sm font-bold text-purple-600"
                   >
-                    Manage Users
+                    Manage Sellers
                   </Link>
                 )}
                 <button
