@@ -1,3 +1,5 @@
+import { useToast } from "../../context/ToastContext";
+import { useConfirm } from "../../context/ConfirmContext";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -9,14 +11,17 @@ import {
   Truck,
   XCircle,
   Eye,
+  Banknote, // Icon for Mark Paid
 } from "lucide-react";
 
 const SellerOrders = () => {
+  const toast = useToast();
+  const confirm = useConfirm();
   const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [actionLoading, setActionLoading] = useState(null); // Track which button is loading
+  const [actionLoading, setActionLoading] = useState(null); // Track specific button loading state
 
   const fetchOrders = async () => {
     try {
@@ -36,20 +41,62 @@ const SellerOrders = () => {
 
   // --- MARK AS DELIVERED HANDLER ---
   const markDeliveredHandler = async (orderId) => {
-    if (!window.confirm("Are you sure this order is delivered?")) return;
-
-    setActionLoading(orderId); // Show loading spinner on specific button
+    if (
+      !(await confirm(
+        "Are you sure you want to mark this order as Delivered?",
+        "Confirm Delivery",
+        "info",
+      ))
+    ) {
+      return;
+    }
+    setActionLoading(orderId);
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       await axios.put(`/api/orders/${orderId}/deliver`, {}, config);
-      alert("Order Marked as Delivered!");
-      fetchOrders(); // Refresh list
+      toast.success("Order Marked as Delivered!");
+      fetchOrders();
     } catch (err) {
-      alert(err.response?.data?.message || "Update failed");
+      toast.error(err.response?.data?.message || "Update failed");
     } finally {
       setActionLoading(null);
     }
   };
+
+  // --- NEW: MARK AS PAID HANDLER (For COD) ---
+  const markPaidHandler = async (orderId) => {
+    if (
+      !(await confirm(
+        "Have you received the cash payment for this order?",
+        "Confirm Payment",
+      ))
+    ) {
+      return;
+    }
+
+    setActionLoading(orderId);
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      // Reuse the existing pay endpoint, passing manual details
+      await axios.put(
+        `/api/orders/${orderId}/pay`,
+        {
+          id: `MANUAL-COD-${Date.now()}`,
+          status: "success",
+          update_time: new Date().toISOString(),
+          email: user.email, // Seller marked it
+        },
+        config,
+      );
+      toast.success("Payment Recorded Successfully!");
+      fetchOrders();
+    } catch (err) {
+      toast.error("Could not update payment status");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+  // ------------------------------------------
 
   if (loading)
     return (
@@ -90,10 +137,7 @@ const SellerOrders = () => {
                     Total
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
-                    Payment
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
-                    Delivery
+                    Status
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">
                     Actions
@@ -115,50 +159,73 @@ const SellerOrders = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                       ₹{order.totalPrice}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {order.isPaid ? (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          Paid
-                        </span>
-                      ) : (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                          Pending
-                        </span>
-                      )}
+
+                    {/* Status Column (Combined Paid + Deliver) */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex flex-col gap-1">
+                        {order.isPaid ? (
+                          <span className="flex items-center gap-1 text-green-600 font-bold text-xs">
+                            <CheckCircle size={12} /> Paid
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-red-600 font-bold text-xs">
+                            <XCircle size={12} /> Pending Pay
+                          </span>
+                        )}
+
+                        {order.isDelivered ? (
+                          <span className="flex items-center gap-1 text-green-600 font-bold text-xs">
+                            <Truck size={12} /> Delivered
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-yellow-600 font-bold text-xs">
+                            <Truck size={12} /> Processing
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {order.isDelivered ? (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 gap-1 items-center">
-                          <CheckCircle size={12} /> Delivered
-                        </span>
-                      ) : (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 gap-1 items-center">
-                          <Truck size={12} /> Processing
-                        </span>
-                      )}
-                    </td>
+
+                    {/* Actions Column */}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end items-center gap-2">
-                      {/* VIEW DETAILS */}
                       <Link
                         to={`/order/${order._id}`}
-                        className="text-gray-500 hover:text-amazon-blue p-1 rounded hover:bg-gray-100"
+                        className="text-gray-500 hover:text-amazon-blue p-2 rounded hover:bg-gray-100"
                         title="View Details"
                       >
-                        <Eye size={20} />
+                        <Eye size={18} />
                       </Link>
 
-                      {/* MARK DELIVERED BUTTON */}
-                      {!order.isDelivered && (
+                      {/* MARK PAID BUTTON (Only if not paid) */}
+                      {!order.isPaid && (
                         <button
-                          onClick={() => markDeliveredHandler(order._id)}
+                          onClick={() => markPaidHandler(order._id)}
                           disabled={actionLoading === order._id}
-                          className="bg-amazon-blue text-white px-3 py-1 rounded text-xs hover:bg-gray-800 flex items-center gap-1 disabled:opacity-50"
+                          className="bg-green-600 text-white px-3 py-1.5 rounded text-xs hover:bg-green-700 flex items-center gap-1 shadow-sm disabled:opacity-50"
+                          title="Mark as Paid (COD Received)"
                         >
                           {actionLoading === order._id ? (
                             <Loader size={12} className="animate-spin" />
                           ) : (
-                            "Mark Delivered"
+                            <Banknote size={14} />
                           )}
+                          Paid
+                        </button>
+                      )}
+
+                      {/* MARK DELIVERED BUTTON (Only if not delivered) */}
+                      {!order.isDelivered && (
+                        <button
+                          onClick={() => markDeliveredHandler(order._id)}
+                          disabled={actionLoading === order._id}
+                          className="bg-amazon-blue text-white px-3 py-1.5 rounded text-xs hover:bg-gray-800 flex items-center gap-1 shadow-sm disabled:opacity-50"
+                          title="Mark as Delivered"
+                        >
+                          {actionLoading === order._id ? (
+                            <Loader size={12} className="animate-spin" />
+                          ) : (
+                            <Truck size={14} />
+                          )}
+                          Delivered
                         </button>
                       )}
                     </td>

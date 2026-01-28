@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom"; // Link is already imported
+import { Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { Loader, Package, XCircle, CheckCircle } from "lucide-react";
+import { Loader, Package, Search, ChevronRight } from "lucide-react";
 
 const MyOrders = () => {
   const { user } = useAuth();
@@ -13,9 +13,7 @@ const MyOrders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const config = {
-          headers: { Authorization: `Bearer ${user.token}` },
-        };
+        const config = { headers: { Authorization: `Bearer ${user.token}` } };
         const { data } = await axios.get("/api/orders/myorders", config);
         setOrders(data);
       } catch (err) {
@@ -24,26 +22,50 @@ const MyOrders = () => {
         setLoading(false);
       }
     };
-
-    if (user) {
-      fetchOrders();
-    }
+    if (user) fetchOrders();
   }, [user]);
 
-  return (
-    <div className="container mx-auto px-4 py-8 font-outfit min-h-[80vh]">
-      <h1 className="text-2xl font-bold mb-6 text-amazon-blue">Your Orders</h1>
+  if (loading)
+    return (
+      <div className="flex justify-center p-20">
+        <Loader className="animate-spin text-amazon-blue" />
+      </div>
+    );
+  if (error)
+    return <div className="text-red-500 text-center p-10">{error}</div>;
 
-      {loading ? (
-        <div className="flex justify-center mt-10">
-          <Loader className="animate-spin" />
+  return (
+    <div className="container mx-auto px-4 py-8 font-outfit max-w-5xl min-h-screen">
+      {/* Breadcrumbs */}
+      <div className="text-sm text-gray-500 mb-2">
+        <Link to="/" className="hover:underline">
+          Your Account
+        </Link>{" "}
+        › <span className="text-amazon-orange">Your Orders</span>
+      </div>
+
+      <div className="flex justify-between items-end mb-6 border-b pb-4">
+        <h1 className="text-3xl font-normal text-gray-800">Your Orders</h1>
+        {/* Fake Search Bar for aesthetics */}
+        <div className="hidden md:flex items-center border border-gray-300 rounded overflow-hidden">
+          <div className="bg-gray-100 px-2 py-2">
+            <Search size={18} className="text-gray-500" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search all orders"
+            className="px-2 py-1 outline-none text-sm w-64"
+          />
+          <button className="bg-gray-800 text-white px-4 py-1.5 text-sm font-bold rounded-full m-1">
+            Search Orders
+          </button>
         </div>
-      ) : error ? (
-        <div className="bg-red-100 text-red-700 p-3 rounded">{error}</div>
-      ) : orders.length === 0 ? (
-        <div className="bg-white p-8 text-center rounded shadow-sm">
-          <Package size={48} className="mx-auto text-gray-300 mb-4" />
-          <h2 className="text-xl font-bold text-gray-700">No orders yet</h2>
+      </div>
+
+      {orders.length === 0 ? (
+        <div className="text-center py-20 bg-gray-50 border rounded-lg">
+          <Package size={48} className="mx-auto text-gray-300 mb-3" />
+          <h2 className="text-xl text-gray-800">You have no orders yet.</h2>
           <Link
             to="/"
             className="text-blue-600 hover:underline mt-2 inline-block"
@@ -52,78 +74,114 @@ const MyOrders = () => {
           </Link>
         </div>
       ) : (
-        <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Paid
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Delivered
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {orders.map((order) => (
-                <tr key={order._id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {order._id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.createdAt.substring(0, 10)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₹{order.totalPrice}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {order.isPaid ? (
-                      <span className="flex items-center text-green-600">
-                        <CheckCircle size={16} className="mr-1" />{" "}
-                        {order.paidAt?.substring(0, 10)}
-                      </span>
-                    ) : (
-                      <span className="flex items-center text-red-600">
-                        <XCircle size={16} className="mr-1" /> Not Paid
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {order.isDelivered ? (
-                      <span className="flex items-center text-green-600">
-                        <CheckCircle size={16} className="mr-1" /> Delivered
-                      </span>
-                    ) : (
-                      <span className="flex items-center text-red-600">
-                        <XCircle size={16} className="mr-1" /> Not Delivered
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {/* --- CHANGED THIS BUTTON TO LINK --- */}
+        <div className="space-y-6">
+          {orders.map((order) => (
+            <div
+              key={order._id}
+              className="border border-gray-300 rounded-lg bg-white overflow-hidden hover:shadow-sm transition-shadow"
+            >
+              {/* --- ORDER HEADER (Grey Bar) --- */}
+              <div className="bg-gray-100 p-4 flex flex-col md:flex-row justify-between text-sm text-gray-600 gap-4">
+                <div className="flex gap-8">
+                  <div className="flex flex-col">
+                    <span className="uppercase text-xs font-bold">
+                      Order Placed
+                    </span>
+                    <span className="text-gray-800">
+                      {order.createdAt.substring(0, 10)}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="uppercase text-xs font-bold">Total</span>
+                    <span className="text-gray-800">₹{order.totalPrice}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="uppercase text-xs font-bold">Ship To</span>
+                    <span className="text-blue-600 group relative cursor-pointer hover:underline">
+                      {user.name}
+                      {/* Tooltip Simulation */}
+                      <div className="hidden group-hover:block absolute top-6 left-0 bg-white border shadow-lg p-2 rounded w-48 z-10 text-gray-800">
+                        {order.shippingAddress.address},{" "}
+                        {order.shippingAddress.city}
+                      </div>
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col md:items-end">
+                  <span className="uppercase text-xs font-bold">
+                    Order # {order._id}
+                  </span>
+                  <div className="flex gap-4 mt-1">
                     <Link
                       to={`/order/${order._id}`}
-                      className="text-amazon-blue hover:text-amazon-yellow bg-gray-100 px-3 py-1 rounded border border-gray-300 inline-block transition-colors"
+                      className="text-blue-600 hover:underline"
                     >
-                      Details
+                      View Order Details
                     </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <span className="text-gray-300">|</span>
+                    <span className="text-blue-600 hover:underline cursor-pointer">
+                      Invoice
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* --- ORDER BODY --- */}
+              <div className="p-6">
+                <h3 className="font-bold text-lg mb-4 text-gray-800">
+                  {order.isDelivered
+                    ? `Delivered ${order.deliveredAt?.substring(0, 10)}`
+                    : "Arriving Soon"}
+                </h3>
+
+                <div className="flex flex-col md:flex-row justify-between gap-6">
+                  {/* Items List */}
+                  <div className="flex-1 space-y-4">
+                    {order.orderItems.map((item, idx) => (
+                      <div key={idx} className="flex gap-4 items-start">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-20 h-20 object-contain"
+                        />
+                        <div>
+                          <Link
+                            to={`/product/${item.product}`}
+                            className="text-blue-600 font-medium hover:underline line-clamp-2"
+                          >
+                            {item.name}
+                          </Link>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Return window closed on{" "}
+                            {new Date().toLocaleDateString()}
+                          </p>
+                          <button className="bg-amazon-yellow text-sm px-3 py-1 rounded-lg mt-2 hover:bg-yellow-400 border border-yellow-500 shadow-sm">
+                            Buy it again
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="md:w-64 flex flex-col gap-2">
+                    <Link
+                      to={`/order/${order._id}`}
+                      className="w-full bg-white border border-gray-300 py-1.5 rounded-lg text-sm text-center shadow-sm hover:bg-gray-50"
+                    >
+                      Track Package
+                    </Link>
+                    <button className="w-full bg-white border border-gray-300 py-1.5 rounded-lg text-sm shadow-sm hover:bg-gray-50">
+                      Write a product review
+                    </button>
+                    <button className="w-full bg-white border border-gray-300 py-1.5 rounded-lg text-sm shadow-sm hover:bg-gray-50">
+                      Leave seller feedback
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

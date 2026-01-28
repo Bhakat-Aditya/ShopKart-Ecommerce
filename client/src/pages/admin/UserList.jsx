@@ -1,3 +1,4 @@
+import { useConfirm } from "../../context/ConfirmContext";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -5,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Loader, Trash2, CheckCircle, XCircle, Store, Eye } from "lucide-react"; // Changed Icon to Eye or Store
 
 const UserList = () => {
+  const confirm = useConfirm();
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +32,10 @@ const UserList = () => {
 
   const deleteHandler = async (id) => {
     if (
-      window.confirm("Delete this Seller? All their products will be removed.")
+      await confirm(
+        "This will permanently delete the user and their data.",
+        "Delete User",
+      )
     ) {
       try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };

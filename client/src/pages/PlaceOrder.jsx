@@ -1,3 +1,4 @@
+import { useToast } from "../context/ToastContext";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
@@ -6,6 +7,7 @@ import axios from "axios";
 import { Loader, CreditCard, Banknote } from "lucide-react";
 
 const PlaceOrder = () => {
+  const toast = useToast();
   const { cartItems, shippingAddress, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -62,6 +64,7 @@ const PlaceOrder = () => {
 
       // 2. IF COD: We are done. Redirect.
       if (paymentMethod === "COD") {
+        toast.success("Order Placed Successfully!");
         clearCart();
         navigate(`/order/${createdOrder._id}`);
         return;
@@ -108,10 +111,11 @@ const PlaceOrder = () => {
               config,
             );
             clearCart();
+            toast.success("Payment Successful! Order Placed.");
             navigate(`/order/${createdOrder._id}`);
           } catch (error) {
             console.error(error);
-            alert("Payment successful, but order status update failed.");
+            toast.error("Payment successful but verification failed.");
           }
         },
         prefill: { name: user.name, email: user.email, contact: "9999999999" },
@@ -122,6 +126,7 @@ const PlaceOrder = () => {
       paymentObject.open();
       setLoading(false);
     } catch (err) {
+      toast.error(err.response?.data?.message || "Order Failed");
       setError(err.response?.data?.message || err.message);
       setLoading(false);
     }

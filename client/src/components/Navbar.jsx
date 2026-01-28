@@ -13,18 +13,19 @@ import {
   LogOut,
   MapPin,
   Package,
+  ChevronLeft, // <--- Import Arrow Icons
+  ChevronRight, // <--- Import Arrow Icons
 } from "lucide-react";
 
 const Navbar = () => {
   const [keyword, setKeyword] = useState("");
   const [category, setCategory] = useState("");
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // State for Mobile Menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const { cartItems } = useCart();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Amazon Categories
   const categories = [
     "Mobiles",
     "Computers",
@@ -46,17 +47,12 @@ const Navbar = () => {
 
   const submitHandler = (e) => {
     e.preventDefault();
-    // Navigate to the new SearchPage with query params
     if (keyword.trim()) {
       navigate(`/search?keyword=${keyword}&category=${category}`);
       setIsMenuOpen(false);
     } else {
-      // If no keyword but category selected, go to search page too
-      if (category) {
-        navigate(`/search?category=${category}`);
-      } else {
-        navigate("/");
-      }
+      if (category) navigate(`/search?category=${category}`);
+      else navigate("/");
     }
   };
 
@@ -83,7 +79,6 @@ const Navbar = () => {
 
           {/* MOBILE ICONS (Cart + Hamburger) */}
           <div className="md:hidden flex items-center gap-4">
-            {/* Cart (Always Visible) */}
             <Link
               to="/cart"
               className="relative text-white"
@@ -96,8 +91,6 @@ const Navbar = () => {
                 </span>
               )}
             </Link>
-
-            {/* Hamburger Button */}
             <button
               onClick={toggleMenu}
               className="text-white focus:outline-none"
@@ -106,6 +99,25 @@ const Navbar = () => {
             </button>
           </div>
         </div>
+
+        {/* --- DESKTOP NAVIGATION ARROWS (Back/Forward) --- */}
+        <div className="hidden md:flex items-center gap-1 text-gray-300">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-1.5 hover:bg-white/10 hover:text-white rounded-full transition-colors"
+            title="Go Back"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button
+            onClick={() => navigate(1)}
+            className="p-1.5 hover:bg-white/10 hover:text-white rounded-full transition-colors"
+            title="Go Forward"
+          >
+            <ChevronRight size={24} />
+          </button>
+        </div>
+        {/* ------------------------------------------------ */}
 
         {/* --- ROW 2: Search Bar (Always Visible) --- */}
         <form
@@ -140,8 +152,10 @@ const Navbar = () => {
           </button>
         </form>
 
-        {/* --- DESKTOP NAVIGATION (Hidden on Mobile) --- */}
+        {/* --- DESKTOP NAVIGATION LINKS --- */}
         <div className="hidden md:flex items-center gap-6">
+          {/* ... (Keep existing Seller/Account/Cart Links same as before) ... */}
+
           {/* Seller Link */}
           {user &&
             (user.isSeller ? (
@@ -211,7 +225,7 @@ const Navbar = () => {
                     to="/admin/users"
                     className="block px-4 py-2 hover:bg-gray-100 text-sm font-bold text-purple-600"
                   >
-                    Manage Sellers
+                    Manage Users
                   </Link>
                 )}
                 <button
@@ -232,7 +246,7 @@ const Navbar = () => {
             </Link>
           )}
 
-          {/* Cart Desktop */}
+          {/* Cart */}
           <Link
             to="/cart"
             className="flex items-end gap-1 border border-transparent hover:border-white p-2 rounded"
@@ -250,9 +264,10 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* --- MOBILE MENU OVERLAY (Visible only when isMenuOpen is true) --- */}
+      {/* --- MOBILE MENU OVERLAY (Keep existing code) --- */}
       {isMenuOpen && (
         <div className="md:hidden absolute top-[100%] left-0 w-full bg-white text-gray-800 shadow-xl border-t border-gray-200 z-40">
+          {/* ... (Keep existing Mobile Menu Content) ... */}
           <div className="p-4 bg-amazon-light text-white flex items-center gap-3">
             <User
               size={24}
@@ -287,8 +302,6 @@ const Navbar = () => {
                 >
                   <MapPin size={18} /> Saved Addresses
                 </Link>
-
-                {/* Seller Link Mobile */}
                 {user.isSeller ? (
                   <Link
                     to="/seller/dashboard"
@@ -306,7 +319,6 @@ const Navbar = () => {
                     <Store size={18} /> Become a Seller
                   </Link>
                 )}
-
                 <button
                   onClick={logoutHandler}
                   className="w-full flex items-center gap-3 px-6 py-3 hover:bg-red-50 text-sm font-bold text-red-600 mt-2"

@@ -1,3 +1,4 @@
+import { useToast } from "../context/ToastContext";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
@@ -21,6 +22,7 @@ import { useAuth } from "../context/AuthContext";
 import ProductRow from "../components/ProductRow"; // <--- IMPORT THIS
 
 const ProductDetails = () => {
+  const toast = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart, cartItems } = useCart();
@@ -78,6 +80,7 @@ const ProductDetails = () => {
   const handleAddToCart = () => {
     addToCart(product, qty);
     setAdded(true);
+    toast.success("Added to Cart");
     setTimeout(() => setAdded(false), 2000);
   };
 
@@ -112,13 +115,13 @@ const ProductDetails = () => {
         { rating, comment },
         config,
       );
-      alert("Review Submitted!");
+      toast.success("Review Submitted Successfully!");
       setReviewLoading(false);
       setRating(5);
       setComment("");
       await fetchProduct(false);
     } catch (err) {
-      alert(err.response?.data?.message || err.message);
+      toast.error(err.response?.data?.message || "Review Failed");
       setReviewLoading(false);
     }
   };

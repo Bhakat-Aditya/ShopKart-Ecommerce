@@ -29,55 +29,65 @@ import ProductEdit from "./pages/admin/ProductEdit";
 import SellerOrders from "./pages/seller/SellerOrders";
 import SellerShop from "./pages/SellerShop";
 
+import { ToastProvider } from "./context/ToastContext";
+import { ConfirmProvider } from "./context/ConfirmContext";
+
 function App() {
   return (
-    <div className="min-h-screen flex flex-col font-outfit bg-gray-100">
-      <Navbar />
-      <main className="grow">
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/search/:keyword" element={<Home />} />
-          <Route path="/product/:id" element={<ProductDetails />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/shipping" element={<Shipping />} />
-          <Route path="/placeorder" element={<PlaceOrder />} />
-          <Route path="/myorders" element={<MyOrders />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/addresses" element={<SavedAddresses />} />
-          <Route path="/wishlist" element={<Wishlist />} />
-          <Route path="/order/:id" element={<OrderDetails />} />
-          <Route path="/shop/:id" element={<SellerShop />} />
+    <ToastProvider>
+      <ConfirmProvider>
+        <div className="min-h-screen flex flex-col font-outfit bg-gray-100">
+          <Navbar />
+          <main className="grow">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/search/:keyword" element={<Home />} />
+              <Route path="/product/:id" element={<ProductDetails />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/shipping" element={<Shipping />} />
+              <Route path="/placeorder" element={<PlaceOrder />} />
+              <Route path="/myorders" element={<MyOrders />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/addresses" element={<SavedAddresses />} />
+              <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/order/:id" element={<OrderDetails />} />
+              <Route path="/shop/:id" element={<SellerShop />} />
 
-          {/* Seller Registration */}
-          <Route path="/seller/register" element={<SellerRegister />} />
+              {/* Seller Registration */}
+              <Route path="/seller/register" element={<SellerRegister />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminRoute />}>
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="users" element={<UserList />} />
-            <Route path="user/:id/edit" element={<UserEdit />} />
-            <Route path="seller/:id/products" element={<SellerProducts />} />
-          </Route>
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminRoute />}>
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="users" element={<UserList />} />
+                <Route path="user/:id/edit" element={<UserEdit />} />
+                <Route
+                  path="seller/:id/products"
+                  element={<SellerProducts />}
+                />
+              </Route>
 
-          {/* Protected Seller Area */}
-          <Route path="/seller" element={<SellerRoute />}>
-            <Route path="dashboard" element={<SellerDashboard />} />
-            <Route path="products" element={<ProductList />} />{" "}
-            <Route path="orders" element={<SellerOrders />} />
-            {/* List "My" Products */}
-            <Route path="product/:id/edit" element={<ProductEdit />} />
-          </Route>
-        </Routes>
-      </main>
-      <footer className="bg-amazon-light text-white p-4 text-center mt-auto">
-        &copy; 2026 ShopKart
-      </footer>
-    </div>
+              {/* Protected Seller Area */}
+              <Route path="/seller" element={<SellerRoute />}>
+                <Route path="dashboard" element={<SellerDashboard />} />
+                <Route path="products" element={<ProductList />} />{" "}
+                <Route path="orders" element={<SellerOrders />} />
+                {/* List "My" Products */}
+                <Route path="product/:id/edit" element={<ProductEdit />} />
+              </Route>
+            </Routes>
+          </main>
+          <footer className="bg-amazon-light text-white p-4 text-center mt-auto">
+            &copy; 2026 ShopKart
+          </footer>
+        </div>
+      </ConfirmProvider>
+    </ToastProvider>
   );
 }
 
