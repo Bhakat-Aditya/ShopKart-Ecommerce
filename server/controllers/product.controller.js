@@ -22,6 +22,15 @@ export const getProducts = async (req, res) => {
     }
 };
 
+export const getProductsByUserId = async (req, res) => {
+    try {
+        const products = await Product.find({ user: req.params.userId }).sort({ createdAt: -1 });
+        res.json(products);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 export const getMyProducts = async (req, res) => {
     try {
         const products = await Product.find({ user: req.user._id }).sort({ createdAt: -1 });
@@ -48,7 +57,7 @@ export const createProduct = async (req, res) => {
     try {
         // FIXED: Using "Placeholder" text instead of empty strings to pass Mongoose Validation
         const product = new Product({
-            name: 'New Product Name', 
+            name: 'New Product Name',
             price: 0,
             mrp: 0,
             user: req.user._id,
@@ -58,13 +67,13 @@ export const createProduct = async (req, res) => {
             countInStock: 0,
             numReviews: 0,
             description: 'Please add a description.',
-            isPublished: false 
+            isPublished: false
         });
         const createdProduct = await product.save();
         res.status(201).json(createdProduct);
     } catch (error) {
         // Log the exact validation error for debugging
-        console.error("Create Product Error:", error); 
+        console.error("Create Product Error:", error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -104,7 +113,8 @@ export const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
         if (product) {
-            if (product.user.toString() !== req.user._id.toString()) {
+            // Allow if Owner OR Admin
+            if (product.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
                 return res.status(401).json({ message: "Not authorized" });
             }
             await product.deleteOne();
@@ -116,7 +126,6 @@ export const deleteProduct = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
 export const createProductReview = async (req, res) => {
     try {
         const { rating, comment } = req.body;

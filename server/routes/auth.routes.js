@@ -9,11 +9,28 @@ import {
     toggleWishlist,
     getWishlist,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    getUsers,
+    deleteUser,
+    getUserById,
+    updateUser
 } from '../controllers/auth.controller.js';
-import { protect } from '../middleware/auth.middleware.js';
+import { protect, admin } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
+
+
+router.route('/')
+    .post(registerUser)
+    .get(protect, admin, getUsers); // GET /api/users (Admin Only)
+
+router.route('/:id')
+    .delete(protect, admin, deleteUser); // DELETE /api/users/:id (Admin Only)
+
+router.route('/:id')
+    .delete(protect, admin, deleteUser)
+    .get(protect, admin, getUserById)
+    .put(protect, admin, updateUser);
 
 router.post('/', registerUser);
 router.post('/login', loginUser);
@@ -28,6 +45,8 @@ router.route('/address')
     .get(protect, getAddresses);
 
 router.put('/profile', protect, updateUserProfile);
+
+
 
 
 router.route('/wishlist')

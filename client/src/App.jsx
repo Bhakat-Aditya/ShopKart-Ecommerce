@@ -13,6 +13,10 @@ import Profile from "./pages/Profile";
 import SavedAddresses from "./pages/SavedAddresses";
 import Wishlist from "./pages/Wishlist";
 import ForgotPassword from "./pages/ForgotPassword";
+import AdminRoute from "./components/AdminRoute";
+import UserList from "./pages/admin/UserList";
+import UserEdit from "./pages/admin/UserEdit";
+import SellerProducts from "./pages/admin/SellerProducts";
 
 // Seller Imports
 import SellerRoute from "./components/SellerRoute";
@@ -48,6 +52,13 @@ function App() {
 
           {/* Seller Registration */}
           <Route path="/seller/register" element={<SellerRegister />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminRoute />}>
+            <Route path="users" element={<UserList />} />
+            <Route path="user/:id/edit" element={<UserEdit />} />
+            <Route path="seller/:id/products" element={<SellerProducts />} />
+          </Route>
 
           {/* Protected Seller Area */}
           <Route path="/seller" element={<SellerRoute />}>

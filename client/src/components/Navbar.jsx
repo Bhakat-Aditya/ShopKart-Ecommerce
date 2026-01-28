@@ -192,6 +192,14 @@ const Navbar = () => {
                 >
                   My Orders
                 </Link>
+                {user.isAdmin && (
+                  <Link
+                    to="/admin/users"
+                    className="block px-4 py-2 hover:bg-gray-100 text-sm font-bold text-purple-600"
+                  >
+                    Manage Users
+                  </Link>
+                )}
                 <button
                   onClick={logoutHandler}
                   className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600"
