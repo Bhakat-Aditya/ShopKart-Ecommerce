@@ -34,12 +34,12 @@ const ProductDetails = () => {
   const [qty, setQty] = useState(1);
   const [isLiveUpdating, setIsLiveUpdating] = useState(false);
 
-  // 1. Define Fetch Logic (Outside useEffect so we can reuse it)
+  // 1. Define Fetch Logic
   const fetchProduct = useCallback(
     async (isBackground = false) => {
       try {
-        if (!isBackground) setLoading(true); // Only show big loader on first load
-        if (isBackground) setIsLiveUpdating(true); // Show mini loader on updates
+        if (!isBackground) setLoading(true);
+        if (isBackground) setIsLiveUpdating(true);
 
         const { data } = await axios.get(`/api/products/${id}`);
         setProduct(data);
@@ -56,13 +56,10 @@ const ProductDetails = () => {
 
   // 2. Initial Load & Polling
   useEffect(() => {
-    fetchProduct(false); // First load
-
-    // Poll every 3 seconds for live updates
+    fetchProduct(false);
     const interval = setInterval(() => {
-      fetchProduct(true); // Background update
+      fetchProduct(true);
     }, 3000);
-
     return () => clearInterval(interval);
   }, [fetchProduct]);
 
@@ -105,10 +102,7 @@ const ProductDetails = () => {
       setReviewLoading(false);
       setRating(0);
       setComment("");
-
-      // --- FIX: Refresh Data IMMEDIATELY ---
       await fetchProduct(false);
-      // -------------------------------------
     } catch (err) {
       alert(err.response?.data?.message || err.message);
       setReviewLoading(false);
@@ -215,18 +209,21 @@ const ProductDetails = () => {
               <span className="font-medium">1 Year Warranty</span>
             </div>
           </div>
-          {/* --- SOLD BY SECTION --- */}
+
+          {/* --- ✅ FIXED SOLD BY SECTION --- */}
           <div className="text-sm text-gray-500 py-2">
             Sold by:{" "}
             <Link
-              to={`/shop/${product.user?._id}`}
+              to={`/shop/${product.user?._id || product.user}`}
               className="text-blue-600 hover:underline font-bold"
             >
               {product.user?.seller?.name ||
                 product.user?.name ||
-                "Unknown Seller"}
+                "View Seller Shop"}
             </Link>
           </div>
+          {/* ------------------------------- */}
+
           <div className="py-2">
             <h3 className="font-bold text-gray-800 mb-2 text-lg">
               About this item
@@ -237,7 +234,6 @@ const ProductDetails = () => {
           </div>
 
           <div className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm mt-4 w-full md:max-w-sm relative">
-            {/* Live Indicator */}
             <div className="absolute top-2 right-2">
               {isLiveUpdating && (
                 <RefreshCw size={14} className="animate-spin text-gray-400" />

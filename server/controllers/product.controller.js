@@ -6,7 +6,7 @@ export const getProducts = async (req, res) => {
         const keyword = req.query.keyword ? { name: { $regex: req.query.keyword, $options: 'i' } } : {};
         const category = req.query.category ? { category: req.query.category } : {};
 
-        // --- FIX: Only show Published products on Home Page ---
+        // Only show Published products on Home Page
         const filter = { ...keyword, ...category, isPublished: true };
 
         const pageSize = Number(req.query.limit) || 8;
@@ -35,10 +35,12 @@ export const getMyProducts = async (req, res) => {
     }
 };
 
+// @desc    Get Single Product
 export const getProductById = async (req, res) => {
     try {
-        // ADD .populate('user', 'name seller')
-        const product = await Product.findById(req.params.id).populate('user', 'name seller'); 
+        // ✅ FIXED: Added .populate() to get Seller ID and Name
+        const product = await Product.findById(req.params.id).populate('user', 'name seller');
+
         if (product) {
             res.json(product);
         } else {
@@ -62,7 +64,7 @@ export const createProduct = async (req, res) => {
             countInStock: 0,
             numReviews: 0,
             description: 'Sample description',
-            isPublished: false // <--- HIDDEN BY DEFAULT
+            isPublished: false // Draft by default
         });
         const createdProduct = await product.save();
         res.status(201).json(createdProduct);
@@ -90,7 +92,7 @@ export const updateProduct = async (req, res) => {
             product.category = category;
             product.countInStock = countInStock;
 
-            // --- FIX: Mark as Published when Seller updates it ---
+            // Mark as Published when Seller updates it
             product.isPublished = true;
 
             const updatedProduct = await product.save();
@@ -103,7 +105,6 @@ export const updateProduct = async (req, res) => {
     }
 };
 
-// ... keep deleteProduct and createProductReview exactly as they were ...
 export const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
