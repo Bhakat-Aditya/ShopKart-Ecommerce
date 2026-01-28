@@ -5,7 +5,9 @@ import {
     verifyOtpAndLogin,
     addAddress,
     getAddresses,
-    updateUserProfile 
+    updateUserProfile ,
+    toggleWishlist, 
+    getWishlist
 } from '../controllers/auth.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 
@@ -24,5 +26,12 @@ router.route('/address')
     .get(protect, getAddresses);
 
 router.put('/profile', protect, updateUserProfile);
+
+
+router.route('/wishlist')
+    .get(protect, getWishlist);
+
+router.route('/wishlist/:id')
+    .put(protect, toggleWishlist);
 
 export default router;

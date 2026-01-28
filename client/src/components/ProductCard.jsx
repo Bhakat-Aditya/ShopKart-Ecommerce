@@ -1,7 +1,53 @@
 import { Link } from "react-router-dom";
-import { Star } from "lucide-react";
+import { Star, Heart } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 const ProductCard = ({ product }) => {
+  const { user } = useAuth();
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  // --- FIX: CHECK IF ALREADY WISHLISTED ---
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      if (user) {
+        try {
+          const config = { headers: { Authorization: `Bearer ${user.token}` } };
+          // Fetch latest wishlist to check status
+          // Optimization: Ideally pass 'wishlist' prop from parent, but this works for standalone cards
+          const { data } = await axios.get("/api/users/wishlist", config);
+
+          // Check if THIS product is in the fetched list
+          // The backend returns an array of populated objects, so we check ._id
+          const found = data.some((item) => item._id === product._id);
+          setIsWishlisted(found);
+        } catch (error) {
+          console.error("Wishlist check failed", error);
+        }
+      }
+    };
+    checkWishlistStatus();
+  }, [user, product._id]);
+  // ----------------------------------------
+
+  const toggleWishlistHandler = async (e) => {
+    e.preventDefault(); // Prevent navigating to product page
+    if (!user) {
+      alert("Please login to save items.");
+      return;
+    }
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      await axios.put(`/api/users/wishlist/${product._id}`, {}, config);
+
+      // Toggle state immediately for UI feedback
+      setIsWishlisted(!isWishlisted);
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to update wishlist");
+    }
+  };
+
   // Calculate discount percentage if MRP exists
   const discount =
     product.mrp > product.price
@@ -11,8 +57,21 @@ const ProductCard = ({ product }) => {
   return (
     <Link
       to={`/product/${product._id}`}
-      className="bg-white border border-gray-200 rounded-sm hover:shadow-lg transition-shadow p-4 flex flex-col h-full group cursor-pointer"
+      className="bg-white border border-gray-200 rounded-sm hover:shadow-lg transition-shadow p-4 flex flex-col h-full group cursor-pointer relative"
     >
+      {/* --- HEART BUTTON --- */}
+      <button
+        onClick={toggleWishlistHandler}
+        className="absolute top-2 right-2 z-10 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors shadow-sm"
+        title={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+      >
+        <Heart
+          size={18}
+          className={`transition-colors ${isWishlisted ? "fill-red-500 text-red-500" : "text-gray-400"}`}
+        />
+      </button>
+      {/* -------------------- */}
+
       {/* Image Container */}
       <div className="bg-gray-100 h-48 flex justify-center items-center rounded-sm mb-4 relative overflow-hidden">
         <img

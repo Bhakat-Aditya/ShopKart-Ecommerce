@@ -11,6 +11,7 @@ import MyOrders from "./pages/MyOrders";
 import OrderDetails from "./pages/OrderDetails";
 import Profile from "./pages/Profile";
 import SavedAddresses from "./pages/SavedAddresses";
+import Wishlist from "./pages/Wishlist";
 
 // Seller Imports
 import SellerRoute from "./components/SellerRoute";
@@ -39,6 +40,7 @@ function App() {
           <Route path="/myorders" element={<MyOrders />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/addresses" element={<SavedAddresses />} />
+          <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/order/:id" element={<OrderDetails />} />
           <Route path="/shop/:id" element={<SellerShop />} />
 

@@ -181,6 +181,12 @@ const Navbar = () => {
                   Your Addresses
                 </Link>
                 <Link
+                  to="/wishlist"
+                  className="block px-4 py-2 hover:bg-gray-100 text-sm"
+                >
+                  Your Wishlist
+                </Link>
+                <Link
                   to="/myorders"
                   className="block px-4 py-2 hover:bg-gray-100 text-sm"
                 >

@@ -113,7 +113,7 @@ export const updateUserProfile = async (req, res) => {
 
         if (user) {
             user.name = req.body.name || user.name;
-            
+
             // Only update password if sent
             if (req.body.password) {
                 user.password = req.body.password;
@@ -127,11 +127,52 @@ export const updateUserProfile = async (req, res) => {
                 email: updatedUser.email,
                 isAdmin: updatedUser.isAdmin,
                 isSeller: updatedUser.isSeller,
-                token: generateToken(updatedUser._id), 
+                token: generateToken(updatedUser._id),
             });
         } else {
             res.status(404).json({ message: 'User not found' });
         }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const toggleWishlist = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        const productId = req.params.id;
+
+        // --- FIX 1: Initialize wishlist if it doesn't exist (for old users) ---
+        if (!user.wishlist) {
+            user.wishlist = [];
+        }
+
+        // --- FIX 2: Safer comparison (ObjectId vs String) ---
+        // .includes() sometimes fails when comparing ObjectId objects with id Strings
+        const isWhitelisted = user.wishlist.some(id => id.toString() === productId);
+
+        if (isWhitelisted) {
+            // Remove
+            user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
+            await user.save();
+            res.json({ message: "Removed from Wishlist", wishlist: user.wishlist });
+        } else {
+            // Add
+            user.wishlist.push(productId);
+            await user.save();
+            res.json({ message: "Added to Wishlist", wishlist: user.wishlist });
+        }
+    } catch (error) {
+        console.error("Wishlist Error:", error); // Log exact error to terminal
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getWishlist = async (req, res) => {
+    try {
+        // Populate products details
+        const user = await User.findById(req.user._id).populate('wishlist');
+        res.json(user.wishlist);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

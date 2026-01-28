@@ -1,18 +1,7 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-
-// Sub-schema for Seller Details
-const sellerSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    logo: { type: String },
-    description: { type: String, required: true },
-    rating: { type: Number, default: 0, required: true },
-    numReviews: { type: Number, default: 0, required: true },
-});
+import bcrypt from 'bcryptjs';
 
 const addressSchema = mongoose.Schema({
-    name: { type: String, required: true },
-    phone: { type: String, required: true },
     address: { type: String, required: true },
     city: { type: String, required: true },
     postalCode: { type: String, required: true },
@@ -24,16 +13,16 @@ const userSchema = mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    isAdmin: { type: Boolean, required: true, default: false }, // Kept for legacy, but we use isSeller now
-
-    // --- NEW: Seller Flags ---
-    isSeller: { type: Boolean, default: false },
-    seller: sellerSchema, // Stores shop info
-
-    addresses: [addressSchema],
+    isAdmin: { type: Boolean, required: true, default: false },
+    isSeller: { type: Boolean, required: true, default: false },
+    isVerified: { type: Boolean, default: false },
     otp: { type: String },
     otpExpires: { type: Date },
-    isVerified: { type: Boolean, default: false }
+    addresses: [addressSchema],
+    wishlist: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product'
+    }]
 }, {
     timestamps: true,
 });
@@ -42,12 +31,14 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// --- FIX: REMOVED 'next' PARAMETER ---
 userSchema.pre('save', async function () {
     if (!this.isModified('password')) {
-        return;
+        return; // Just return instead of calling next()
     }
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
+// -------------------------------------
 
 export default mongoose.model("User", userSchema);
