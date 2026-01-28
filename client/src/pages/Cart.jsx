@@ -1,10 +1,9 @@
-import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { Trash2, Plus, Minus, ArrowRight } from "lucide-react";
 
 const Cart = () => {
-  const { cartItems, addToCart, removeFromCart } = useCart();
+  const { cartItems, updateQuantity, removeFromCart } = useCart(); // Use updateQuantity
   const navigate = useNavigate();
 
   const total = cartItems.reduce((acc, item) => acc + item.qty * item.price, 0);
@@ -54,25 +53,23 @@ const Cart = () => {
               </div>
               <div className="flex flex-col items-end justify-between">
                 <div className="flex items-center border border-gray-300 rounded">
-                  {/* --- FIX: Minus Button now subtracts --- */}
+                  {/* --- FIX: Use updateQuantity --- */}
                   <button
                     className="p-1 px-3 hover:bg-gray-100 disabled:opacity-50"
                     disabled={item.qty <= 1}
-                    onClick={() => addToCart(item, item.qty - 1)}
+                    onClick={() => updateQuantity(item._id, item.qty - 1)}
                   >
                     <Minus size={16} />
                   </button>
-                  {/* ------------------------------------- */}
-
                   <span className="px-2 font-bold">{item.qty}</span>
-
                   <button
                     className="p-1 px-3 hover:bg-gray-100 disabled:opacity-50"
                     disabled={item.qty >= item.countInStock}
-                    onClick={() => addToCart(item, item.qty + 1)}
+                    onClick={() => updateQuantity(item._id, item.qty + 1)}
                   >
                     <Plus size={16} />
                   </button>
+                  {/* ----------------------------- */}
                 </div>
                 <button
                   onClick={() => removeFromCart(item._id)}

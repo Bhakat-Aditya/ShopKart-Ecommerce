@@ -6,20 +6,22 @@ import axios from "axios";
 import { Loader } from "lucide-react";
 
 const PlaceOrder = () => {
-  const { cartItems, shippingAddress, clearCart } = useCart(); // Added clearCart
+  const { cartItems, shippingAddress, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const itemsPrice = Number(
-    cartItems.reduce((acc, item) => acc + item.price * item.qty, 0),
+  // Math Logic
+  const itemsPrice = cartItems.reduce(
+    (acc, item) => acc + item.price * item.qty,
+    0,
   );
   const baseShipping = itemsPrice > 500 ? 0 : 75;
   const expressCost = shippingAddress.isExpress ? 85 : 0;
   const shippingPrice = baseShipping + expressCost;
-  const taxPrice = Number((0.18 * itemsPrice).toFixed(2));
-  const totalPrice = (itemsPrice + shippingPrice + taxPrice).toFixed(2);
+  const taxPrice = itemsPrice * 0.18;
+  const totalPrice = itemsPrice + shippingPrice + taxPrice;
 
   useEffect(() => {
     if (!shippingAddress.address) navigate("/shipping");
@@ -41,6 +43,22 @@ const PlaceOrder = () => {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
 
+      // 1. Create the Order in Database FIRST (Status: Not Paid)
+      const { data: createdOrder } = await axios.post(
+        "/api/orders",
+        {
+          orderItems: cartItems,
+          shippingAddress: shippingAddress,
+          paymentMethod: "Razorpay",
+          itemsPrice: Number(itemsPrice.toFixed(2)),
+          shippingPrice: Number(shippingPrice.toFixed(2)),
+          taxPrice: Number(taxPrice.toFixed(2)),
+          totalPrice: Number(totalPrice.toFixed(2)),
+        },
+        config,
+      );
+
+      // 2. Load Razorpay SDK
       const res = await loadRazorpayScript();
       if (!res) {
         alert("Razorpay SDK failed to load. Are you online?");
@@ -48,9 +66,10 @@ const PlaceOrder = () => {
         return;
       }
 
+      // 3. Create Razorpay Order ID
       const { data: razorpayOrder } = await axios.post(
         "/api/payment/create-order",
-        { amount: totalPrice },
+        { amount: totalPrice.toFixed(2) },
         config,
       );
 
@@ -58,6 +77,7 @@ const PlaceOrder = () => {
         data: { key },
       } = await axios.get("/api/payment/get-key");
 
+      // 4. Open Razorpay Popup
       const options = {
         key: key,
         amount: razorpayOrder.amount,
@@ -66,33 +86,30 @@ const PlaceOrder = () => {
         description: "Complete your purchase",
         image: "https://cdn-icons-png.flaticon.com/512/4290/4290854.png",
         order_id: razorpayOrder.id,
+
+        // --- PAYMENT SUCCESS HANDLER ---
         handler: async function (response) {
           try {
-            const { data } = await axios.post(
-              "/api/orders",
+            // 5. Update Order to PAID in Database
+            await axios.put(
+              `/api/orders/${createdOrder._id}/pay`,
               {
-                orderItems: cartItems,
-                shippingAddress: shippingAddress,
-                paymentMethod: "Razorpay",
-                itemsPrice: itemsPrice,
-                shippingPrice: shippingPrice,
-                taxPrice: taxPrice,
-                totalPrice: totalPrice,
-                isPaid: true,
-                paymentResult: {
-                  id: response.razorpay_payment_id,
-                  status: "success",
-                  update_time: new Date().toISOString(),
-                  email_address: user.email,
-                },
+                id: response.razorpay_payment_id,
+                status: "success",
+                update_time: new Date().toISOString(),
+                email: user.email,
               },
               config,
             );
-            clearCart(); // FIXED: Clear cart after payment
-            navigate(`/order/${data._id}`);
+
+            // 6. Success! Clear cart & Redirect
+            clearCart();
+            navigate(`/order/${createdOrder._id}`);
           } catch (error) {
-            alert("Payment Successful, but failed to save order.");
             console.error(error);
+            alert(
+              "Payment Successful, but server update failed. Please contact support.",
+            );
           }
         },
         prefill: {
@@ -122,6 +139,7 @@ const PlaceOrder = () => {
       {error && (
         <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>
       )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
@@ -166,6 +184,7 @@ const PlaceOrder = () => {
             </div>
           </div>
         </div>
+
         <div className="lg:col-span-1">
           <div className="bg-white p-6 rounded shadow-sm border border-gray-200 sticky top-24">
             <h2 className="text-lg font-bold mb-4 text-center border-b pb-2">
@@ -174,7 +193,7 @@ const PlaceOrder = () => {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Items:</span>
-                <span>₹{itemsPrice}</span>
+                <span>₹{itemsPrice.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Base Delivery:</span>
@@ -188,18 +207,17 @@ const PlaceOrder = () => {
               )}
               <div className="flex justify-between">
                 <span>Tax (18%):</span>
-                <span>₹{taxPrice}</span>
+                <span>₹{taxPrice.toFixed(2)}</span>
               </div>
               <div className="border-t pt-2 mt-2 flex justify-between font-bold text-lg text-red-700">
                 <span>Order Total:</span>
-                <span>₹{totalPrice}</span>
+                <span>₹{totalPrice.toFixed(2)}</span>
               </div>
             </div>
             <button
-              type="button"
-              className="w-full bg-amazon-yellow hover:bg-yellow-400 text-amazon-blue font-bold py-3 rounded shadow-sm mt-6 transition-colors flex justify-center items-center"
-              disabled={cartItems.length === 0 || loading}
               onClick={placeOrderHandler}
+              disabled={cartItems.length === 0 || loading}
+              className="w-full bg-amazon-yellow hover:bg-yellow-400 text-amazon-blue font-bold py-3 rounded shadow-sm mt-6 transition-colors flex justify-center items-center"
             >
               {loading ? (
                 <Loader className="animate-spin" />

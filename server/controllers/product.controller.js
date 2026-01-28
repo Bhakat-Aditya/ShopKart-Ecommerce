@@ -46,23 +46,25 @@ export const getProductById = async (req, res) => {
 
 export const createProduct = async (req, res) => {
     try {
-        // FIXED: Empty values instead of "Sample Product" text
+        // FIXED: Using "Placeholder" text instead of empty strings to pass Mongoose Validation
         const product = new Product({
-            name: 'New Product', // Just a placeholder title
+            name: 'New Product Name', 
             price: 0,
             mrp: 0,
             user: req.user._id,
-            image: '', // Empty image
-            brand: '',
-            category: '',
+            image: '/images/sample.jpg', // Valid placeholder path
+            brand: 'Brand Name',
+            category: 'Category',
             countInStock: 0,
             numReviews: 0,
-            description: '',
-            isPublished: false
+            description: 'Please add a description.',
+            isPublished: false 
         });
         const createdProduct = await product.save();
         res.status(201).json(createdProduct);
     } catch (error) {
+        // Log the exact validation error for debugging
+        console.error("Create Product Error:", error); 
         res.status(500).json({ message: error.message });
     }
 };
