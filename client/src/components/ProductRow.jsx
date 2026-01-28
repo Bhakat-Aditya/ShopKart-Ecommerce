@@ -1,51 +1,55 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import ProductCard from "./ProductCard";
-import { Loader, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Loader } from "lucide-react";
 
-const ProductRow = ({ title, category }) => {
+// Accepts category AND keyword now
+const ProductRow = ({ title, category = "", keyword = "" }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Fetch 10 items for this specific category
-        // If category is empty, it fetches "Latest" items
-        const url = category 
-            ? `/api/products?category=${category}&limit=10`
-            : `/api/products?limit=10`;
-            
-        const { data } = await axios.get(url);
+        setLoading(true);
+        // Build Query String
+        let query = `/api/products?`;
+        if (keyword) query += `&keyword=${keyword}`;
+        if (category) query += `&category=${category}`;
+
+        const { data } = await axios.get(query);
         setProducts(data.products);
         setLoading(false);
       } catch (error) {
-        console.error("Failed to fetch row data", error);
+        console.error(error);
         setLoading(false);
       }
     };
     fetchProducts();
-  }, [category]);
+  }, [category, keyword]); // Re-run when these change
 
-  if (loading) return <div className="py-10 flex justify-center"><Loader className="animate-spin text-gray-300"/></div>;
-  if (products.length === 0) return null; // Don't show empty rows
+  if (loading)
+    return (
+      <div className="flex justify-center p-8">
+        <Loader className="animate-spin text-amazon-blue" />
+      </div>
+    );
+
+  if (products.length === 0) {
+    return (
+      <div className="bg-white p-6 md:mx-4 rounded shadow-sm border border-gray-200">
+        <h2 className="text-xl font-bold mb-4">{title}</h2>
+        <p className="text-gray-500">No products found.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="my-8 relative z-10">
-      <div className="flex justify-between items-end px-4 md:px-8 mb-4">
-        <h2 className="text-xl md:text-2xl font-bold text-gray-800">{title}</h2>
-        <Link to={`/search/category:${category || 'all'}`} className="text-sm font-bold text-amazon-blue hover:text-amazon-yellow flex items-center">
-            See all <ChevronRight size={16}/>
-        </Link>
-      </div>
-      
-      {/* Horizontal Scroll Container */}
-      <div className="flex overflow-x-auto gap-4 px-4 md:px-8 pb-4 scrollbar-hide snap-x">
+    <div className="bg-white p-4 md:p-6 md:mx-4 rounded shadow-sm border border-gray-200">
+      <h2 className="text-xl font-bold mb-4 text-amazon-blue">{title}</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {products.map((product) => (
-          <div key={product._id} className="min-w-[250px] md:min-w-[280px] snap-start">
-            <ProductCard product={product} />
-          </div>
+          <ProductCard key={product._id} product={product} />
         ))}
       </div>
     </div>

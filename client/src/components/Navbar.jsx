@@ -2,25 +2,40 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import {
-  ShoppingCart,
-  Search,
-  Menu,
-  User,
-  Store,
-  LayoutDashboard,
-} from "lucide-react";
+import { ShoppingCart, Search, Store, LayoutDashboard } from "lucide-react";
 
 const Navbar = () => {
   const [keyword, setKeyword] = useState("");
+  const [category, setCategory] = useState(""); // Category State
   const { cartItems } = useCart();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Amazon Categories
+  const categories = [
+    "Mobiles",
+    "Computers",
+    "TV, Audio & Cameras",
+    "Appliances",
+    "Fashion",
+    "Home & Kitchen",
+    "Beauty & Health",
+    "Sports & Fitness",
+    "Toys & Baby Products",
+    "Books",
+    "Video Games",
+    "Automotive",
+    "Tools & Home Improvement",
+    "Pet Supplies",
+    "Grocery & Gourmet Foods",
+    "Office Products",
+  ];
+
   const submitHandler = (e) => {
     e.preventDefault();
     if (keyword.trim()) {
-      navigate(`/search/${keyword}`);
+      // Navigate with Keyword AND Category
+      navigate(`/search/${keyword}?category=${category}`);
     } else {
       navigate("/");
     }
@@ -71,12 +86,21 @@ const Navbar = () => {
           onSubmit={submitHandler}
           className="flex flex-grow w-full md:w-auto h-10 rounded-md overflow-hidden bg-white focus-within:ring-2 focus-within:ring-amazon-yellow"
         >
-          <button
-            type="button"
-            className="bg-gray-100 text-gray-600 px-3 text-xs md:text-sm font-medium hover:bg-gray-200 border-r border-gray-300"
+          {/* --- CATEGORY DROPDOWN --- */}
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="bg-gray-100 text-gray-600 px-2 text-xs md:text-sm font-medium hover:bg-gray-200 border-r border-gray-300 outline-none cursor-pointer max-w-[80px] md:max-w-[150px] truncate"
           >
-            All
-          </button>
+            <option value="">All</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+          {/* ------------------------- */}
+
           <input
             type="text"
             name="q"
@@ -94,7 +118,6 @@ const Navbar = () => {
 
         {/* Navigation Links */}
         <div className="hidden md:flex items-center gap-6">
-          {/* --- SELLER BUTTON (FIXED) --- */}
           {user &&
             (user.isSeller ? (
               <Link
@@ -118,7 +141,6 @@ const Navbar = () => {
               </Link>
             ))}
 
-          {/* User Account */}
           {user ? (
             <div className="group relative cursor-pointer border border-transparent hover:border-white p-2 rounded">
               <div className="text-xs text-gray-300">
@@ -126,7 +148,6 @@ const Navbar = () => {
               </div>
               <div className="font-bold text-sm">Account & Lists</div>
 
-              {/* Dropdown */}
               <div className="absolute top-full right-0 w-48 bg-white rounded shadow-md text-gray-800 hidden group-hover:block border border-gray-200">
                 <Link
                   to="/myorders"
@@ -152,7 +173,6 @@ const Navbar = () => {
             </Link>
           )}
 
-          {/* Cart */}
           <Link
             to="/cart"
             className="flex items-end gap-1 border border-transparent hover:border-white p-2 rounded"

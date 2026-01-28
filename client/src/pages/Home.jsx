@@ -1,25 +1,25 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom"; // Import useSearchParams
 import ProductRow from "../components/ProductRow";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-// Placeholder Banner Images (You can replace these with your own uploaded banners later)
 const banners = [
-  "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070&auto=format&fit=crop", // Shopping
-  "https://images.unsplash.com/photo-1550009158-9ebf69173e03?q=80&w=2101&auto=format&fit=crop", // Electronics
-  "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop", // Fashion
+  "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1550009158-9ebf69173e03?q=80&w=2101&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop",
 ];
 
 const Home = () => {
   const { keyword } = useParams();
+  const [searchParams] = useSearchParams();
+  const categoryParam = searchParams.get("category") || ""; // Read category from URL
 
-  // --- Hero Slider Logic ---
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % banners.length);
-    }, 5000); // Auto-slide every 5 seconds
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -28,15 +28,19 @@ const Home = () => {
   const prevSlide = () =>
     setCurrentSlide((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
 
-  // --- Search View (If user searches, show grid instead of rows) ---
+  // --- SEARCH VIEW ---
   if (keyword) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold mb-6">Results for "{keyword}"</h2>
-        {/* Note: You can re-use the grid logic here if you want, 
-                   or just use a single ProductRow for search results. 
-                   For now, let's keep the row logic which is cleaner. */}
-        <ProductRow title="Search Results" />
+        <h2 className="text-2xl font-bold mb-6">
+          Results for "{keyword}" {categoryParam && `in ${categoryParam}`}
+        </h2>
+        {/* FIX: Pass keyword and category to ProductRow */}
+        <ProductRow
+          title="Search Results"
+          keyword={keyword}
+          category={categoryParam}
+        />
       </div>
     );
   }
@@ -45,7 +49,6 @@ const Home = () => {
     <div className="bg-gray-50 min-h-screen font-outfit pb-20">
       {/* HERO CAROUSEL */}
       <div className="relative w-full h-[300px] md:h-[500px] overflow-hidden">
-        {/* Slides */}
         <div
           className="flex transition-transform duration-700 ease-in-out h-full"
           style={{ transform: `translateX(-${currentSlide * 100}%)` }}
@@ -57,7 +60,6 @@ const Home = () => {
                 alt={`Banner ${index}`}
                 className="w-full h-full object-cover"
               />
-              {/* Dark Overlay for Text */}
               <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent flex items-end pb-12 pl-8 md:pl-20">
                 <div className="text-white max-w-xl animate-fade-in-up">
                   <h1 className="text-3xl md:text-5xl font-bold mb-2 shadow-sm">
@@ -79,7 +81,6 @@ const Home = () => {
           ))}
         </div>
 
-        {/* Slider Controls */}
         <button
           onClick={prevSlide}
           className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white p-2 rounded-full backdrop-blur-sm transition"
@@ -93,7 +94,6 @@ const Home = () => {
           <ChevronRight size={24} />
         </button>
 
-        {/* Indicators */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
           {banners.map((_, i) => (
             <div
@@ -104,22 +104,12 @@ const Home = () => {
         </div>
       </div>
 
-      {/* --- CONTENT ROWS (The "Amazon" Layout) --- */}
-      {/* Move content slightly up to overlap banner like Amazon */}
+      {/* --- CONTENT ROWS --- */}
       <div className="relative z-10 -mt-10 md:-mt-20 space-y-4">
-        {/* Row 1: Latest Items */}
         <ProductRow title="Latest Drops" category="" />
-
-        {/* Row 2: Electronics */}
         <ProductRow title="Top Electronics" category="Electronics" />
-
-        {/* Row 3: Mobiles */}
         <ProductRow title="Best Selling Mobiles" category="Mobiles" />
-
-        {/* Row 4: Fashion */}
         <ProductRow title="Fashion & Apparel" category="Fashion" />
-
-        {/* Row 5: Home & Kitchen */}
         <ProductRow
           title="Home & Kitchen Essentials"
           category="Home & Kitchen"
