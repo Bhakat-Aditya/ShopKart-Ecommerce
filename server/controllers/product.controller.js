@@ -1,12 +1,9 @@
 import Product from '../models/product.model.js';
 
-// @desc    Fetch all products (Public)
 export const getProducts = async (req, res) => {
     try {
         const keyword = req.query.keyword ? { name: { $regex: req.query.keyword, $options: 'i' } } : {};
         const category = req.query.category ? { category: req.query.category } : {};
-
-        // Only show Published products on Home Page
         const filter = { ...keyword, ...category, isPublished: true };
 
         const pageSize = Number(req.query.limit) || 8;
@@ -25,7 +22,6 @@ export const getProducts = async (req, res) => {
     }
 };
 
-// @desc    Get Seller's Products (Shows Drafts & Published)
 export const getMyProducts = async (req, res) => {
     try {
         const products = await Product.find({ user: req.user._id }).sort({ createdAt: -1 });
@@ -35,12 +31,9 @@ export const getMyProducts = async (req, res) => {
     }
 };
 
-// @desc    Get Single Product
 export const getProductById = async (req, res) => {
     try {
-        // ✅ FIXED: Added .populate() to get Seller ID and Name
         const product = await Product.findById(req.params.id).populate('user', 'name seller');
-
         if (product) {
             res.json(product);
         } else {
@@ -51,20 +44,21 @@ export const getProductById = async (req, res) => {
     }
 };
 
-// @desc    Create a Product (Starts as DRAFT)
 export const createProduct = async (req, res) => {
     try {
+        // FIXED: Empty values instead of "Sample Product" text
         const product = new Product({
-            name: 'Sample Product',
+            name: 'New Product', // Just a placeholder title
             price: 0,
+            mrp: 0,
             user: req.user._id,
-            image: '/images/sample.jpg',
-            brand: 'Sample Brand',
-            category: 'Sample Category',
+            image: '', // Empty image
+            brand: '',
+            category: '',
             countInStock: 0,
             numReviews: 0,
-            description: 'Sample description',
-            isPublished: false // Draft by default
+            description: '',
+            isPublished: false
         });
         const createdProduct = await product.save();
         res.status(201).json(createdProduct);
@@ -73,10 +67,10 @@ export const createProduct = async (req, res) => {
     }
 };
 
-// @desc    Update a Product (PUBLISHES IT)
 export const updateProduct = async (req, res) => {
     try {
-        const { name, price, description, image, brand, category, countInStock } = req.body;
+        // Added 'mrp' to body destructuring
+        const { name, price, mrp, description, image, brand, category, countInStock } = req.body;
         const product = await Product.findById(req.params.id);
 
         if (product) {
@@ -86,13 +80,12 @@ export const updateProduct = async (req, res) => {
 
             product.name = name;
             product.price = price;
+            product.mrp = mrp; // Update MRP
             product.description = description;
             product.image = image;
             product.brand = brand;
             product.category = category;
             product.countInStock = countInStock;
-
-            // Mark as Published when Seller updates it
             product.isPublished = true;
 
             const updatedProduct = await product.save();

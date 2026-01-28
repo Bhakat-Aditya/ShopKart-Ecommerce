@@ -6,14 +6,12 @@ import axios from "axios";
 import { Loader } from "lucide-react";
 
 const PlaceOrder = () => {
-  const { cartItems, shippingAddress } = useCart();
+  const { cartItems, shippingAddress, clearCart } = useCart(); // Added clearCart
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // --- 1. Calculations ---
-  const addDecimals = (num) => (Math.round(num * 100) / 100).toFixed(2);
   const itemsPrice = Number(
     cartItems.reduce((acc, item) => acc + item.price * item.qty, 0),
   );
@@ -28,7 +26,6 @@ const PlaceOrder = () => {
     else if (cartItems.length === 0) navigate("/cart");
   }, [shippingAddress, cartItems, navigate]);
 
-  // --- RAZORPAY HELPER: Load Script ---
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
@@ -39,13 +36,11 @@ const PlaceOrder = () => {
     });
   };
 
-  // --- MAIN HANDLER ---
   const placeOrderHandler = async () => {
     try {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
 
-      // 1. Load Script
       const res = await loadRazorpayScript();
       if (!res) {
         alert("Razorpay SDK failed to load. Are you online?");
@@ -53,32 +48,26 @@ const PlaceOrder = () => {
         return;
       }
 
-      // 2. Create Razorpay Order (Backend)
       const { data: razorpayOrder } = await axios.post(
         "/api/payment/create-order",
         { amount: totalPrice },
         config,
       );
 
-      // 3. Get Key ID
       const {
         data: { key },
       } = await axios.get("/api/payment/get-key");
 
-      // 4. Options for Popup
       const options = {
         key: key,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
         name: "ShopKart",
         description: "Complete your purchase",
-        image: "https://cdn-icons-png.flaticon.com/512/4290/4290854.png", // ShopKart Logo
+        image: "https://cdn-icons-png.flaticon.com/512/4290/4290854.png",
         order_id: razorpayOrder.id,
-
-        // --- ON SUCCESS CALLBACK ---
         handler: async function (response) {
           try {
-            // 5. Save Order to Database (Verified & Paid)
             const { data } = await axios.post(
               "/api/orders",
               {
@@ -89,7 +78,7 @@ const PlaceOrder = () => {
                 shippingPrice: shippingPrice,
                 taxPrice: taxPrice,
                 totalPrice: totalPrice,
-                isPaid: true, // Mark as Paid!
+                isPaid: true,
                 paymentResult: {
                   id: response.razorpay_payment_id,
                   status: "success",
@@ -99,28 +88,23 @@ const PlaceOrder = () => {
               },
               config,
             );
+            clearCart(); // FIXED: Clear cart after payment
             navigate(`/order/${data._id}`);
           } catch (error) {
-            alert(
-              "Payment Successful, but failed to save order. Contact Support.",
-            );
+            alert("Payment Successful, but failed to save order.");
             console.error(error);
           }
         },
         prefill: {
           name: user.name,
           email: user.email,
-          contact: "9999999999", // Test Number
-        },
-        notes: {
-          address: "ShopKart Corporate Office",
+          contact: "9999999999",
         },
         theme: {
-          color: "#febd69", // Amazon Yellow
+          color: "#febd69",
         },
       };
 
-      // 5. Open Popup
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
       setLoading(false);
@@ -135,13 +119,10 @@ const PlaceOrder = () => {
       <h1 className="text-2xl font-bold mb-6 text-amazon-blue">
         Review Your Order
       </h1>
-
       {error && (
         <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>
       )}
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left: Details */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
             <h2 className="text-lg font-bold mb-3 uppercase tracking-wide text-gray-700">
@@ -153,7 +134,6 @@ const PlaceOrder = () => {
               {shippingAddress.postalCode}, {shippingAddress.country}
             </p>
           </div>
-
           <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
             <h2 className="text-lg font-bold mb-3 uppercase tracking-wide text-gray-700">
               Order Items
@@ -186,14 +166,11 @@ const PlaceOrder = () => {
             </div>
           </div>
         </div>
-
-        {/* Right: Summary */}
         <div className="lg:col-span-1">
           <div className="bg-white p-6 rounded shadow-sm border border-gray-200 sticky top-24">
             <h2 className="text-lg font-bold mb-4 text-center border-b pb-2">
               Order Summary
             </h2>
-
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Items:</span>
@@ -218,7 +195,6 @@ const PlaceOrder = () => {
                 <span>₹{totalPrice}</span>
               </div>
             </div>
-
             <button
               type="button"
               className="w-full bg-amazon-yellow hover:bg-yellow-400 text-amazon-blue font-bold py-3 rounded shadow-sm mt-6 transition-colors flex justify-center items-center"

@@ -1,41 +1,35 @@
-import path from 'path';
 import express from 'express';
 import multer from 'multer';
-import { protect, seller } from '../middleware/auth.middleware.js'; // Removed 'admin'
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import dotenv from 'dotenv';
+import { protect, seller } from '../middleware/auth.middleware.js';
 
+dotenv.config();
 const router = express.Router();
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename(req, file, cb) {
-    cb(null, `image-${Date.now()}${path.extname(file.originalname)}`);
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'shopkart_products',
+    allowedFormats: ['jpeg', 'png', 'jpg', 'webp'],
   },
 });
 
-function checkFileType(file, cb) {
-  const filetypes = /jpg|jpeg|png/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype);
+const upload = multer({ storage });
 
-  if (extname && mimetype) {
-    return cb(null, true);
-  } else {
-    cb('Images only!');
-  }
-}
-
-const upload = multer({
-  storage,
-  fileFilter: function (req, file, cb) {
-    checkFileType(file, cb);
-  },
-});
-
-// Allow Sellers to upload images
 router.post('/', protect, seller, upload.single('image'), (req, res) => {
-  res.send(`/${req.file.path.replace(/\\/g, "/")}`); // Fix for Windows paths
+  if (req.file && req.file.path) {
+    res.send(req.file.path);
+  } else {
+    res.status(500).json({ message: 'Image upload failed' });
+  }
 });
 
 export default router;
