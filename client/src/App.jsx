@@ -16,6 +16,7 @@ import SellerDashboard from "./pages/seller/SellerDashboard";
 import SellerRegister from "./pages/seller/SellerRegister";
 import ProductList from "./pages/admin/ProductList";
 import ProductEdit from "./pages/admin/ProductEdit";
+import SellerOrders from "./pages/seller/SellerOrders";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           <Route path="/placeorder" element={<PlaceOrder />} />
           <Route path="/myorders" element={<MyOrders />} />
           <Route path="/order/:id" element={<OrderDetails />} />
+          <Route path="orders" element={<SellerOrders />} />
 
           {/* Seller Registration */}
           <Route path="/seller/register" element={<SellerRegister />} />

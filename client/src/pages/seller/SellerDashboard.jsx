@@ -94,12 +94,17 @@ const SellerDashboard = () => {
       {/* --- ACTION BUTTONS --- */}
       <div className="flex gap-4">
         <Link
-          to="/admin/productlist"
-          className="bg-amazon-yellow px-6 py-3 rounded-lg font-bold hover:bg-yellow-400"
+          to="/seller/products"
+          className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors"
         >
-          Manage My Products
+          Manage Products
         </Link>
-        {/* Add "Create New Product" button here later */}
+        <Link
+          to="/seller/orders"
+          className="bg-amazon-yellow text-amazon-blue px-6 py-3 rounded-lg font-bold hover:bg-yellow-400 transition-colors flex items-center gap-2"
+        >
+          <Package size={20} /> Manage Orders
+        </Link>
       </div>
     </div>
   );

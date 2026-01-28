@@ -108,3 +108,37 @@ export const cancelOrder = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+export const getSellerOrders = async (req, res) => {
+    try {
+        // 1. Get all product IDs belonging to this seller
+        const products = await Product.find({ user: req.user._id });
+        const sellerProductIds = products.map(p => p._id.toString());
+
+        // 2. Find orders that contain ANY of these products
+        const orders = await Order.find({
+            "orderItems.product": { $in: products.map(p => p._id) }
+        })
+            .populate('user', 'id name email') // Get customer details
+            .sort({ createdAt: -1 });
+
+        // 3. Sanitize: Filter out items that don't belong to this seller
+        const sanitizedOrders = orders.map(order => {
+            const orderDoc = order.toObject(); // Convert to plain JS object
+
+            // Keep only THIS seller's items
+            orderDoc.orderItems = orderDoc.orderItems.filter(item =>
+                sellerProductIds.includes(item.product.toString())
+            );
+
+            // Recalculate total price for THIS seller (optional but good for display)
+            orderDoc.sellerTotal = orderDoc.orderItems.reduce((acc, item) => acc + item.price * item.qty, 0);
+
+            return orderDoc;
+        });
+
+        res.json(sanitizedOrders);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
