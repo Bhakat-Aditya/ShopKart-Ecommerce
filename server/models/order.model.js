@@ -60,7 +60,6 @@ const orderSchema = mongoose.Schema({
         type: Boolean,
         required: true,
         default: false
-
     },
     paidAt: {
         type: Date
@@ -69,7 +68,6 @@ const orderSchema = mongoose.Schema({
         type: Boolean,
         required: true,
         default: false
-
     },
     deliveredAt: {
         type: Date
@@ -82,6 +80,16 @@ const orderSchema = mongoose.Schema({
     cancelledAt: {
         type: Date
     },
+    // --- NEW LOGISTICS FIELDS ---
+    orderStatus: {
+        type: String,
+        required: true,
+        default: 'Processing',
+        enum: ['Processing', 'Shipped', 'Out for Delivery', 'Delivered']
+    },
+    expectedDelivery: {
+        type: Date
+    }
 }, {
     timestamps: true,
 });

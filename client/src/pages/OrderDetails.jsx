@@ -1,58 +1,136 @@
-import { useConfirm } from "../context/ConfirmContext";
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom"; // Kept Link just in case, though unused for Eye now
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import { useConfirm } from "../context/ConfirmContext";
 import {
   Loader,
-  CheckCircle,
   Package,
-  XCircle,
-  Trash2,
+  CheckCircle,
   Truck,
-} from "lucide-react"; // Removed MapPin, CreditCard imports if unused or use them
+  Banknote,
+  Warehouse, // Icon for Logistics
+  Calendar,
+  X,
+} from "lucide-react"; // Removed Eye from imports
 
-const OrderDetails = () => {
-  const confirm = useConfirm();
-  const { id } = useParams();
-  const navigate = useNavigate();
+const SellerOrders = () => {
   const { user } = useAuth();
-  const [order, setOrder] = useState(null);
+  const toast = useToast();
+  const confirm = useConfirm();
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // Unused state removed: const [deliverLoading, setDeliverLoading] = useState(false);
+
+  // Modal State
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [status, setStatus] = useState("Processing");
+  const [date, setDate] = useState("");
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
+
+  const fetchOrders = async () => {
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      const { data } = await axios.get("/api/orders/seller", config);
+      setOrders(data);
+      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load orders");
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!user) return;
-    const fetchOrder = async () => {
-      try {
-        const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        const { data } = await axios.get(`/api/orders/${id}`, config);
-        setOrder(data);
-        setLoading(false);
-      } catch (err) {
-        setError(err.response?.data?.message || err.message);
-        setLoading(false);
-      }
-    };
-    if (user) fetchOrder();
-  }, [id, user]);
+    if (user && user.isSeller) fetchOrders();
+  }, [user]);
 
-  const cancelOrderHandler = async () => {
+  // Handle Opening Modal
+  const openLogisticsModal = (order) => {
+    setSelectedOrder(order);
+    setStatus(order.orderStatus || "Processing");
+    if (order.expectedDelivery) {
+      setDate(new Date(order.expectedDelivery).toISOString().split("T")[0]);
+    } else {
+      setDate("");
+    }
+  };
+
+  // Handle Logistics Update
+  const updateLogisticsHandler = async (e) => {
+    e.preventDefault();
+    setUpdateLoading(true);
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      await axios.put(
+        `/api/orders/${selectedOrder._id}/status`,
+        { status, date },
+        config,
+      );
+      toast.success("Logistics Updated Successfully");
+      setSelectedOrder(null); // Close modal
+      fetchOrders(); // Refresh data
+    } catch (error) {
+      toast.error("Failed to update status");
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  // --- MARK AS DELIVERED HANDLER ---
+  const markDeliveredHandler = async (orderId) => {
     if (
-      await confirm(
-        "Are you sure you want to cancel this order? This cannot be undone.",
-        "Cancel Order",
-      )
-    ) {
-      try {
-        const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await axios.delete(`/api/orders/${id}`, config);
-        alert("Order Cancelled Successfully");
-        navigate("/myorders");
-      } catch (err) {
-        alert(err.response?.data?.message || "Could not cancel order");
-      }
+      !(await confirm(
+        "Are you sure this order is delivered?",
+        "Confirm Delivery",
+        "info",
+      ))
+    )
+      return;
+
+    setActionLoading(orderId);
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      await axios.put(`/api/orders/${orderId}/deliver`, {}, config);
+      toast.success("Order Marked as Delivered!");
+      fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Update failed");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // --- NEW: MARK AS PAID HANDLER (For COD) ---
+  const markPaidHandler = async (orderId) => {
+    if (
+      !(await confirm(
+        "Confirm payment received for this order?",
+        "Confirm Payment",
+      ))
+    )
+      return;
+
+    setActionLoading(orderId);
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      await axios.put(
+        `/api/orders/${orderId}/pay`,
+        {
+          id: `MANUAL-COD-${Date.now()}`,
+          status: "success",
+          update_time: new Date().toISOString(),
+          email: user.email,
+        },
+        config,
+      );
+      toast.success("Order Marked as Paid!");
+      fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Update failed");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -64,201 +142,221 @@ const OrderDetails = () => {
     );
   if (error)
     return <div className="text-red-500 text-center p-20">{error}</div>;
-  if (!order)
-    return <div className="text-center p-20 text-red-500">Order not found</div>;
-
-  // --- LOGIC FOR TRACKING BAR ---
-  // Steps: Ordered -> Shipped -> Out for Delivery -> Delivered
-  let currentStep = 1;
-  if (order.isPaid) currentStep = 2; // Assume paid means preparing/shipped
-  if (order.isDelivered) currentStep = 4; // Final step
-
-  const getStepClass = (step) => {
-    if (currentStep >= step) return "text-amazon-green font-bold";
-    return "text-gray-400";
-  };
-
-  const getBarClass = (step) => {
-    if (currentStep >= step) return "bg-green-600";
-    return "bg-gray-200";
-  };
 
   return (
-    <div className="container mx-auto px-4 py-8 font-outfit max-w-6xl">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div>
-          <h1 className="text-2xl text-gray-800 font-normal">
-            View order details
-          </h1>
-          <div className="text-sm text-gray-500 mt-1">
-            Ordered on {new Date(order.createdAt).toLocaleDateString()} | Order
-            # {order._id}
+    <div className="container mx-auto px-4 py-8 font-outfit relative">
+      <h1 className="text-2xl font-bold mb-6 text-amazon-blue">
+        Manage Orders
+      </h1>
+
+      {orders.length === 0 ? (
+        <div className="bg-white p-8 rounded shadow text-center">
+          <Package size={48} className="mx-auto text-gray-300 mb-4" />
+          <p className="text-gray-500">You have no orders yet.</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Order ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Customer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Total
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Payment
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Logistics
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {orders.map((order) => (
+                  <tr key={order._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-blue-600">
+                      #{order._id.substring(20, 24)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {order.user?.name || "Guest"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {order.createdAt.substring(0, 10)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                      ₹{order.totalPrice}
+                    </td>
+
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-bold ${order.isPaid ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                      >
+                        {order.isPaid ? "Paid" : "Pending"}
+                      </span>
+                    </td>
+
+                    {/* Logistics Status Column */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1
+                                ${
+                                  order.orderStatus === "Delivered"
+                                    ? "bg-green-100 text-green-800"
+                                    : order.orderStatus === "Out for Delivery"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-blue-50 text-blue-600"
+                                }`}
+                        >
+                          {order.orderStatus === "Delivered" ? (
+                            <CheckCircle size={12} />
+                          ) : (
+                            <Truck size={12} />
+                          )}
+                          {order.orderStatus || "Processing"}
+                        </span>
+                      </div>
+                      {order.expectedDelivery && !order.isDelivered && (
+                        <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                          <Calendar size={10} /> Exp:{" "}
+                          {new Date(
+                            order.expectedDelivery,
+                          ).toLocaleDateString()}
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end items-center gap-2">
+                        {/* WAREHOUSE BUTTON (Disabled if Delivered) */}
+                        <button
+                          onClick={() => openLogisticsModal(order)}
+                          disabled={order.isDelivered}
+                          className={`p-2 rounded shadow-sm transition-colors ${
+                            order.isDelivered
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              : "bg-purple-600 text-white hover:bg-purple-700"
+                          }`}
+                          title={
+                            order.isDelivered
+                              ? "Order Complete"
+                              : "Update Warehouse Status"
+                          }
+                        >
+                          <Warehouse size={16} />
+                        </button>
+
+                        {/* MARK PAID BUTTON */}
+                        {!order.isPaid && (
+                          <button
+                            onClick={() => markPaidHandler(order._id)}
+                            disabled={actionLoading === order._id}
+                            className="bg-green-600 text-white p-2 rounded hover:bg-green-700 shadow-sm disabled:opacity-50"
+                            title="Mark Paid"
+                          >
+                            {actionLoading === order._id ? (
+                              <Loader size={16} className="animate-spin" />
+                            ) : (
+                              <Banknote size={16} />
+                            )}
+                          </button>
+                        )}
+
+                        {/* Eye Button REMOVED here */}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-        <div className="mt-4 md:mt-0 flex gap-3">
-          {!order.isDelivered && !order.isCancelled && (
-            <button
-              onClick={cancelOrderHandler}
-              className="border border-red-300 bg-white text-red-600 shadow-sm px-4 py-1.5 rounded-lg text-sm hover:bg-red-50 flex items-center gap-2"
-            >
-              <Trash2 size={16} /> Cancel Order
-            </button>
-          )}
-          <button className="border border-gray-300 bg-white shadow-sm px-4 py-1.5 rounded-lg text-sm hover:bg-gray-50">
-            Invoice
-          </button>
-        </div>
-      </div>
-
-      {/* --- SHIPPING INFO BOX --- */}
-      <div className="border border-gray-300 rounded-lg p-4 md:p-6 mb-8 bg-white grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-        <div>
-          <h3 className="font-bold text-gray-700 mb-2">Shipping Address</h3>
-          <p className="font-medium text-gray-900">{user.name}</p>
-          <p>{order.shippingAddress.address}</p>
-          <p>
-            {order.shippingAddress.city}, {order.shippingAddress.postalCode}
-          </p>
-          <p>{order.shippingAddress.country}</p>
-        </div>
-        <div>
-          <h3 className="font-bold text-gray-700 mb-2">Payment Method</h3>
-          <p className="flex items-center gap-2">
-            <span className="font-medium text-gray-800">
-              {order.paymentMethod}
-            </span>
-          </p>
-          <div className="mt-2">
-            {order.isPaid ? (
-              <span className="text-green-600 font-bold flex items-center gap-1 text-xs uppercase tracking-wide border border-green-200 bg-green-50 px-2 py-1 rounded w-fit">
-                <CheckCircle size={14} /> Paid
-              </span>
-            ) : (
-              <span className="text-red-600 font-bold flex items-center gap-1 text-xs uppercase tracking-wide border border-red-200 bg-red-50 px-2 py-1 rounded w-fit">
-                <XCircle size={14} /> Pending
-              </span>
-            )}
-          </div>
-        </div>
-        <div>
-          <h3 className="font-bold text-gray-700 mb-2">Order Summary</h3>
-          <div className="flex justify-between mb-1">
-            <span>Item(s) Subtotal:</span>
-            <span>₹{order.itemsPrice || 0}</span>
-          </div>
-          <div className="flex justify-between mb-1">
-            <span>Shipping:</span>
-            <span>
-              {order.shippingPrice === 0 ? "FREE" : `₹${order.shippingPrice}`}
-            </span>
-          </div>
-          <div className="flex justify-between mb-1">
-            <span>Tax:</span>
-            <span>₹{order.taxPrice || 0}</span>
-          </div>
-          <div className="flex justify-between font-bold text-gray-800 mt-2 pt-2 border-t">
-            <span>Grand Total:</span>
-            <span>₹{order.totalPrice}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* --- TRACKING SECTION --- */}
-      <div className="border border-gray-300 rounded-lg bg-white mb-8 overflow-hidden">
-        <div className="p-4 md:p-6 border-b border-gray-200 bg-gray-50">
-          <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
-            {order.isDelivered ? (
-              <CheckCircle className="text-green-600" />
-            ) : (
-              <Truck className="text-amazon-blue" />
-            )}
-            {order.isDelivered ? "Delivered" : "Arriving Soon"}
-          </h2>
-          <p className="text-green-600 text-sm ml-8">
-            {order.isDelivered
-              ? "Package was handed to resident."
-              : "On the way"}
-          </p>
-        </div>
-
-        {/* PROGRESS BAR */}
-        <div className="p-6 md:px-12 bg-white">
-          <div className="relative flex justify-between items-center mb-2">
-            {/* Lines */}
-            <div className="absolute top-1/2 left-0 w-full h-1.5 bg-gray-200 -z-20 rounded-full"></div>
-
-            {/* Overlay Green Bar based on step */}
-            <div
-              className={`absolute top-1/2 left-0 h-1.5 bg-green-600 -z-10 transition-all duration-1000 rounded-full`}
-              style={{
-                width:
-                  currentStep === 1
-                    ? "0%"
-                    : currentStep === 2
-                      ? "33%"
-                      : currentStep === 3
-                        ? "66%"
-                        : "100%",
-              }}
-            ></div>
-
-            {/* Dots */}
-            {[1, 2, 3, 4].map((step) => (
-              <div
-                key={step}
-                className={`w-4 h-4 rounded-full border-2 border-white shadow-sm ${currentStep >= step ? "bg-green-600 scale-110" : "bg-gray-200"}`}
-              ></div>
-            ))}
-          </div>
-
-          {/* Labels */}
-          <div className="flex justify-between text-xs md:text-sm mt-2 font-medium">
-            <span className={getStepClass(1)}>Ordered</span>
-            <span className={getStepClass(2)}>Shipped</span>
-            <span className={getStepClass(3)}>Out for Delivery</span>
-            <span className={getStepClass(4)}>Delivered</span>
-          </div>
-        </div>
-
-        {/* ITEMS IN PACKAGE */}
-        <div className="p-6 border-t border-gray-200">
-          <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <Package size={18} /> Package Contents
-          </h3>
-          {order.orderItems.map((item, index) => (
-            <div key={index} className="flex gap-4 mb-4 last:mb-0 items-center">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-16 h-16 object-contain mix-blend-multiply border rounded bg-white p-1"
-              />
-              <div className="flex-1">
-                <Link
-                  to={`/product/${item.product}`}
-                  className="text-blue-600 font-bold hover:underline line-clamp-1"
-                >
-                  {item.name}
-                </Link>
-                <p className="text-xs text-gray-500">
-                  Sold by: ShopKart Retail
-                </p>
-                <div className="flex gap-4 mt-1 items-center">
-                  <span className="text-sm font-bold text-gray-800">
-                    ₹{item.price}
-                  </span>
-                  <span className="text-xs text-gray-500">Qty: {item.qty}</span>
-                </div>
-              </div>
-              <button className="hidden sm:block text-sm bg-amazon-yellow text-amazon-blue px-4 py-1.5 rounded shadow-sm hover:bg-yellow-400 font-medium transition-colors">
-                Buy it again
+      )}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-scale-up">
+            <div className="bg-gray-50 p-4 border-b flex justify-between items-center">
+              <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <Warehouse className="text-amazon-blue" /> Update Logistics
+              </h3>
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
               </button>
             </div>
-          ))}
+
+            <form onSubmit={updateLogisticsHandler} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  Current Status
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full border p-2 rounded focus:ring-2 ring-amazon-yellow outline-none"
+                >
+                  <option value="Processing">Processing</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="Out for Delivery">Out for Delivery</option>
+                  <option value="Delivered">Delivered</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  Expected Delivery Date
+                </label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full border p-2 rounded focus:ring-2 ring-amazon-yellow outline-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Set the estimated arrival date for the customer.
+                </p>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(null)}
+                  className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateLoading}
+                  className="px-4 py-2 bg-amazon-yellow text-amazon-blue rounded font-bold hover:bg-yellow-400 shadow-sm flex items-center gap-2"
+                >
+                  {updateLoading ? (
+                    <Loader size={16} className="animate-spin" />
+                  ) : (
+                    "Update Status"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default OrderDetails;
+export default SellerOrders;

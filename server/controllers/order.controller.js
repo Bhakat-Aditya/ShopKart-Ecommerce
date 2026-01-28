@@ -47,7 +47,7 @@ export const getOrderById = async (req, res) => {
     }
 };
 
-// 3. Update Order to Paid (FIXED EXPORT)
+// 3. Update Order to Paid
 export const updateOrderToPaid = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
@@ -115,8 +115,7 @@ export const deleteOrder = async (req, res) => {
                 return res.status(401).json({ message: "Not authorized to cancel this order" });
             }
 
-            // Restore Stock (Optional but recommended)
-            // If you want to put items back in stock when cancelled:
+            // Restore Stock
             for (const item of order.orderItems) {
                 const product = await Product.findById(item.product);
                 if (product) {
@@ -142,6 +141,7 @@ export const updateOrderToDelivered = async (req, res) => {
         if (order) {
             order.isDelivered = true;
             order.deliveredAt = Date.now();
+            order.orderStatus = 'Delivered'; // Sync status
 
             const updatedOrder = await order.save();
             res.json(updatedOrder);
@@ -155,24 +155,15 @@ export const updateOrderToDelivered = async (req, res) => {
 
 export const getAdminStats = async (req, res) => {
     try {
-        // 1. Total Orders
         const ordersCount = await Order.countDocuments();
-
-        // 2. Total Revenue (Sum of all paid orders)
         const salesData = await Order.aggregate([
             { $match: { isPaid: true } },
             { $group: { _id: null, totalSales: { $sum: "$totalPrice" } } }
         ]);
         const totalSales = salesData.length > 0 ? salesData[0].totalSales : 0;
-
-        // 3. Total Users & Sellers
         const usersCount = await User.countDocuments();
         const sellersCount = await User.countDocuments({ isSeller: true });
-
-        // 4. Total Products
         const productsCount = await Product.countDocuments();
-
-        // 5. Recent 5 Orders (System wide)
         const recentOrders = await Order.find({})
             .populate("user", "name")
             .sort({ createdAt: -1 })
@@ -186,6 +177,32 @@ export const getAdminStats = async (req, res) => {
             productsCount,
             recentOrders
         });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// --- NEW: Update Order Status & Logistics ---
+export const updateOrderStatus = async (req, res) => {
+    try {
+        const { status, date } = req.body;
+        const order = await Order.findById(req.params.id);
+
+        if (order) {
+            order.orderStatus = status;
+            if (date) order.expectedDelivery = date;
+
+            // Sync with boolean flags
+            if (status === 'Delivered') {
+                order.isDelivered = true;
+                order.deliveredAt = Date.now();
+            }
+
+            const updatedOrder = await order.save();
+            res.json(updatedOrder);
+        } else {
+            res.status(404).json({ message: 'Order not found' });
+        }
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
