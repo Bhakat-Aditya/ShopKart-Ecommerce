@@ -10,6 +10,7 @@ import PlaceOrder from "./pages/PlaceOrder";
 import MyOrders from "./pages/MyOrders";
 import OrderDetails from "./pages/OrderDetails";
 import Profile from "./pages/Profile";
+import SavedAddresses from "./pages/SavedAddresses";
 
 // Seller Imports
 import SellerRoute from "./components/SellerRoute";
@@ -37,6 +38,7 @@ function App() {
           <Route path="/placeorder" element={<PlaceOrder />} />
           <Route path="/myorders" element={<MyOrders />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/addresses" element={<SavedAddresses />} />
           <Route path="/order/:id" element={<OrderDetails />} />
           <Route path="/shop/:id" element={<SellerShop />} />
 
