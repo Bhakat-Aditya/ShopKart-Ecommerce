@@ -5,9 +5,11 @@ import {
     verifyOtpAndLogin,
     addAddress,
     getAddresses,
-    updateUserProfile ,
-    toggleWishlist, 
-    getWishlist
+    updateUserProfile,
+    toggleWishlist,
+    getWishlist,
+    forgotPassword,
+    resetPassword
 } from '../controllers/auth.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 
@@ -33,5 +35,8 @@ router.route('/wishlist')
 
 router.route('/wishlist/:id')
     .put(protect, toggleWishlist);
+
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 export default router;

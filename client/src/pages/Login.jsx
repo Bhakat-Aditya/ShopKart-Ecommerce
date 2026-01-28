@@ -18,8 +18,6 @@ const Login = () => {
   const location = useLocation(); // <--- Get URL params
   const { login, user } = useAuth();
 
-  // 1. Calculate Redirect Path
-  // If URL is /login?redirect=/admin/productlist, then redirect = "/admin/productlist"
   const searchParams = new URLSearchParams(location.search);
   const redirect = searchParams.get("redirect") || "/";
 
@@ -127,6 +125,17 @@ const Login = () => {
                   "Continue"
                 )}
               </button>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-bold text-gray-700">
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
             </form>
             <div className="mt-6 text-sm text-center">
               <span className="text-gray-600">New to ShopKart? </span>

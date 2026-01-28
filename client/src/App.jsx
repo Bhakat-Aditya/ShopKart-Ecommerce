@@ -12,6 +12,7 @@ import OrderDetails from "./pages/OrderDetails";
 import Profile from "./pages/Profile";
 import SavedAddresses from "./pages/SavedAddresses";
 import Wishlist from "./pages/Wishlist";
+import ForgotPassword from "./pages/ForgotPassword";
 
 // Seller Imports
 import SellerRoute from "./components/SellerRoute";
@@ -34,6 +35,7 @@ function App() {
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/register" element={<Register />} />
           <Route path="/shipping" element={<Shipping />} />
           <Route path="/placeorder" element={<PlaceOrder />} />

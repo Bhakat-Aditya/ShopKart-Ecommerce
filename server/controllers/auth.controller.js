@@ -177,3 +177,49 @@ export const getWishlist = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+export const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        return res.status(404).json({ message: "User not found with this email" });
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 Minutes
+    await user.save();
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: 'ShopKart - Reset Password OTP',
+            otp: otp,
+            message: `Your OTP to reset your password is ${otp}. It expires in 10 minutes.`
+        });
+        res.json({ message: "OTP sent to your email" });
+    } catch (error) {
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        await user.save();
+        res.status(500).json({ message: "Email sending failed. Try again." });
+    }
+};
+
+export const resetPassword = async (req, res) => {
+    const { email, otp, password } = req.body;
+    const user = await User.findOne({ email });
+
+    if (user && user.otp === otp && user.otpExpires > Date.now()) {
+        user.password = password; // Mongoose pre-save hook will hash this
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        await user.save();
+
+        res.json({ message: "Password Reset Successfully! Please Login." });
+    } else {
+        res.status(400).json({ message: "Invalid or Expired OTP" });
+    }
+};
