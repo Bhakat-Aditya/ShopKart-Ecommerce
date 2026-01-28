@@ -10,6 +10,7 @@ import {
   XCircle,
   Trash2,
   CheckCircle,
+  Truck,
 } from "lucide-react";
 
 const OrderDetails = () => {
@@ -19,6 +20,7 @@ const OrderDetails = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deliverLoading, setDeliverLoading] = useState(false); // State for delivery button
 
   useEffect(() => {
     if (!user) return;
@@ -36,7 +38,6 @@ const OrderDetails = () => {
     fetchOrder();
   }, [id, user]);
 
-  // --- CANCEL HANDLER (Uses DELETE) ---
   const cancelOrderHandler = async () => {
     if (
       window.confirm(
@@ -45,7 +46,6 @@ const OrderDetails = () => {
     ) {
       try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        // Using DELETE route (supported by backend)
         await axios.delete(`/api/orders/${id}`, config);
         alert("Order Cancelled Successfully");
         navigate("/myorders");
@@ -54,6 +54,27 @@ const OrderDetails = () => {
       }
     }
   };
+
+  // --- NEW: DELIVER ORDER HANDLER ---
+  const deliverOrderHandler = async () => {
+    try {
+      setDeliverLoading(true);
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      await axios.put(`/api/orders/${id}/deliver`, {}, config);
+      setOrder({
+        ...order,
+        isDelivered: true,
+        deliveredAt: new Date().toISOString(),
+      }); // Optimistic update
+      setDeliverLoading(false);
+      alert("Order Marked as Delivered!");
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Delivery update failed");
+      setDeliverLoading(false);
+    }
+  };
+  // ----------------------------------
 
   if (loading)
     return (
@@ -141,18 +162,18 @@ const OrderDetails = () => {
               <span>₹{order.totalPrice}</span>
             </div>
 
-            {/* CANCEL BUTTON */}
+            {/* CANCEL BUTTON (Visible if not delivered) */}
             {!order.isDelivered && (
               <button
                 onClick={cancelOrderHandler}
-                className="w-full bg-white border-2 border-red-500 text-red-500 hover:bg-red-50 font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-white border-2 border-red-500 text-red-500 hover:bg-red-50 font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 mb-3"
               >
                 <Trash2 size={18} /> Cancel Order
               </button>
             )}
             {order.isDelivered && (
-              <div className="text-center text-green-700 bg-green-50 p-2 rounded border border-green-200">
-                Order Delivered
+              <div className="text-center text-green-700 bg-green-50 p-2 rounded border border-green-200 font-bold flex items-center justify-center gap-2">
+                <CheckCircle size={20} /> Order Delivered
               </div>
             )}
           </div>

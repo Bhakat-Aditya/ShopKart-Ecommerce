@@ -36,7 +36,6 @@ function App() {
           <Route path="/placeorder" element={<PlaceOrder />} />
           <Route path="/myorders" element={<MyOrders />} />
           <Route path="/order/:id" element={<OrderDetails />} />
-          <Route path="orders" element={<SellerOrders />} />
           <Route path="/shop/:id" element={<SellerShop />} />
 
           {/* Seller Registration */}
@@ -46,6 +45,7 @@ function App() {
           <Route path="/seller" element={<SellerRoute />}>
             <Route path="dashboard" element={<SellerDashboard />} />
             <Route path="products" element={<ProductList />} />{" "}
+            <Route path="orders" element={<SellerOrders />} />
             {/* List "My" Products */}
             <Route path="product/:id/edit" element={<ProductEdit />} />
           </Route>

@@ -2,7 +2,8 @@ import express from 'express';
 import {
     addOrderItems,
     getOrderById,
-    updateOrderToPaid, // Now this exists in the controller!
+    updateOrderToPaid, 
+    updateOrderToDelivered,
     getMyOrders,
     getSellerOrders,
     deleteOrder
@@ -24,5 +25,7 @@ router.route('/:id')
     .delete(protect, deleteOrder);
     
 router.route('/:id/pay').put(protect, updateOrderToPaid);
+
+router.route('/:id/deliver').put(protect, seller, updateOrderToDelivered);
 
 export default router;

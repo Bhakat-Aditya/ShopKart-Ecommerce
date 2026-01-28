@@ -1,42 +1,64 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 import {
   Loader,
   Package,
-  MapPin,
-  User,
   CheckCircle,
+  Truck,
   XCircle,
+  Eye,
 } from "lucide-react";
 
 const SellerOrders = () => {
   const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(null); // Track which button is loading
+
+  const fetchOrders = async () => {
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      const { data } = await axios.get("/api/orders/seller", config);
+      setOrders(data);
+      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load orders");
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        const { data } = await axios.get("/api/orders/seller", config);
-        setOrders(data);
-        setLoading(false);
-      } catch (error) {
-        console.error(error);
-        setLoading(false);
-      }
-    };
-    fetchOrders();
+    if (user && user.isSeller) fetchOrders();
   }, [user]);
+
+  // --- MARK AS DELIVERED HANDLER ---
+  const markDeliveredHandler = async (orderId) => {
+    if (!window.confirm("Are you sure this order is delivered?")) return;
+
+    setActionLoading(orderId); // Show loading spinner on specific button
+    try {
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
+      await axios.put(`/api/orders/${orderId}/deliver`, {}, config);
+      alert("Order Marked as Delivered!");
+      fetchOrders(); // Refresh list
+    } catch (err) {
+      alert(err.response?.data?.message || "Update failed");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   if (loading)
     return (
-      <div className="p-10 flex justify-center">
+      <div className="flex justify-center p-20">
         <Loader className="animate-spin" />
       </div>
     );
+  if (error)
+    return <div className="text-red-500 text-center p-20">{error}</div>;
 
   return (
     <div className="container mx-auto px-4 py-8 font-outfit">
@@ -45,112 +67,106 @@ const SellerOrders = () => {
       </h1>
 
       {orders.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-lg border border-gray-200">
+        <div className="bg-white p-8 rounded shadow text-center">
           <Package size={48} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-xl font-medium text-gray-600">No orders yet</h3>
-          <p className="text-gray-400">
-            Your products haven't been purchased yet.
-          </p>
+          <p className="text-gray-500">You have no orders yet.</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {orders.map((order) => (
-            <div
-              key={order._id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
-            >
-              {/* Header */}
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-col md:flex-row justify-between md:items-center gap-4">
-                <div>
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+        <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
                     Order ID
-                  </span>
-                  <p className="font-mono text-sm text-gray-800">
-                    #{order._id}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                    Placed On
-                  </span>
-                  <p className="text-sm text-gray-800">
-                    {order.createdAt.substring(0, 10)}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
                     Customer
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <User size={14} className="text-gray-400" />
-                    <p className="text-sm font-bold text-gray-800">
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Total
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Payment
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
+                    Delivery
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {orders.map((order) => (
+                  <tr key={order._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-blue-600">
+                      #{order._id.substring(20, 24)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {order.user?.name || "Guest"}
-                    </p>
-                  </div>
-                </div>
-                <div className="md:ml-auto">
-                  {order.isPaid ? (
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
-                      <CheckCircle size={14} /> Paid
-                    </span>
-                  ) : (
-                    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
-                      <XCircle size={14} /> Not Paid
-                    </span>
-                  )}
-                </div>
-              </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {order.createdAt.substring(0, 10)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                      ₹{order.totalPrice}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {order.isPaid ? (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          Paid
+                        </span>
+                      ) : (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                          Pending
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {order.isDelivered ? (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 gap-1 items-center">
+                          <CheckCircle size={12} /> Delivered
+                        </span>
+                      ) : (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 gap-1 items-center">
+                          <Truck size={12} /> Processing
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end items-center gap-2">
+                      {/* VIEW DETAILS */}
+                      <Link
+                        to={`/order/${order._id}`}
+                        className="text-gray-500 hover:text-amazon-blue p-1 rounded hover:bg-gray-100"
+                        title="View Details"
+                      >
+                        <Eye size={20} />
+                      </Link>
 
-              {/* Order Items (Only THIS seller's items) */}
-              <div className="p-6">
-                <h4 className="font-bold text-sm mb-4 text-gray-600">
-                  Items to Ship:
-                </h4>
-                <div className="space-y-4">
-                  {order.orderItems.map((item, index) => (
-                    <div key={index} className="flex items-center gap-4">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-16 h-16 object-contain border rounded bg-gray-50"
-                      />
-                      <div className="flex-grow">
-                        <p className="font-bold text-gray-800">{item.name}</p>
-                        <p className="text-sm text-gray-500">
-                          Qty: {item.qty} × ₹{item.price}
-                        </p>
-                      </div>
-                      <div className="text-right font-bold">
-                        ₹{item.qty * item.price}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Shipping Info & Actions */}
-              <div className="bg-blue-50 px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-start gap-2 max-w-md">
-                  <MapPin
-                    size={18}
-                    className="text-blue-600 mt-1 flex-shrink-0"
-                  />
-                  <p className="text-sm text-gray-700">
-                    <span className="font-bold">Shipping Address:</span>
-                    <br />
-                    {order.shippingAddress.address},{" "}
-                    {order.shippingAddress.city},{" "}
-                    {order.shippingAddress.postalCode},{" "}
-                    {order.shippingAddress.country}
-                  </p>
-                </div>
-                {/* Future: Add "Mark as Shipped" button here */}
-                <div className="text-lg font-bold text-amazon-blue">
-                  Your Share: ₹{order.sellerTotal}
-                </div>
-              </div>
-            </div>
-          ))}
+                      {/* MARK DELIVERED BUTTON */}
+                      {!order.isDelivered && (
+                        <button
+                          onClick={() => markDeliveredHandler(order._id)}
+                          disabled={actionLoading === order._id}
+                          className="bg-amazon-blue text-white px-3 py-1 rounded text-xs hover:bg-gray-800 flex items-center gap-1 disabled:opacity-50"
+                        >
+                          {actionLoading === order._id ? (
+                            <Loader size={12} className="animate-spin" />
+                          ) : (
+                            "Mark Delivered"
+                          )}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
