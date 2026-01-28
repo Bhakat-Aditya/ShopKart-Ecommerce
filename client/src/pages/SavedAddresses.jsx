@@ -60,7 +60,7 @@ const SavedAddresses = () => {
   return (
     <div className="container mx-auto px-4 py-8 font-outfit max-w-5xl">
       <div className="flex items-center gap-4 mb-6">
-        <Link to="/profile" className="text-gray-500 hover:text-amazon-blue">
+        <Link to="/" className="text-gray-500 hover:text-amazon-blue">
             <ArrowLeft size={24}/>
         </Link>
         <h1 className="text-3xl font-bold text-amazon-blue">Your Addresses</h1>

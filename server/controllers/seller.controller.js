@@ -85,22 +85,23 @@ export const registerSeller = async (req, res) => {
 
 export const getSellerProfile = async (req, res) => {
     try {
-        // 1. Get Seller Info (Exclude sensitive data like password/email)
-        const user = await User.findById(req.params.id).select('name seller createdAt');
+        const user = await User.findById(req.params.id);
 
         if (!user || !user.isSeller) {
             return res.status(404).json({ message: 'Seller not found' });
         }
 
-        // 2. Get Seller's Active Products
-        const products = await Product.find({ user: req.params.id, isPublished: true });
+        const products = await Product.find({ user: req.params.id }); // Removed isPublished check to keep it simple for now
+
+        // FIX: Safe access to seller object properties
+        const sellerInfo = user.seller || {};
 
         res.json({
             seller: {
                 id: user._id,
-                name: user.seller.name || user.name,
-                logo: user.seller.logo,
-                description: user.seller.description,
+                name: sellerInfo.name || user.name,
+                logo: sellerInfo.logo || "",
+                description: sellerInfo.description || "No description available",
                 joined: user.createdAt
             },
             products
