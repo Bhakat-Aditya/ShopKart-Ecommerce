@@ -4,9 +4,25 @@ export const getProducts = async (req, res) => {
     try {
         const keyword = req.query.keyword ? { name: { $regex: req.query.keyword, $options: 'i' } } : {};
         const category = req.query.category ? { category: req.query.category } : {};
-        const filter = { ...keyword, ...category, isPublished: true };
 
-        const pageSize = Number(req.query.limit) || 8;
+        let filter = { ...keyword, ...category, isPublished: true };
+
+        // --- NEW: Filter by Minimum Discount ---
+        if (req.query.minDiscount) {
+            const minDisc = Number(req.query.minDiscount);
+            filter = {
+                ...filter,
+                $expr: {
+                    $gte: [
+                        { $multiply: [{ $divide: [{ $subtract: ["$mrp", "$price"] }, "$mrp"] }, 100] },
+                        minDisc
+                    ]
+                }
+            };
+        }
+        // ---------------------------------------
+
+        const pageSize = Number(req.query.limit) || 10; // Default to 10 for rows
         const page = Number(req.query.pageNumber) || 1;
         const count = await Product.countDocuments(filter);
 
