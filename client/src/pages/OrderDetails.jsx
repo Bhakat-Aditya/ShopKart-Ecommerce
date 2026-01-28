@@ -4,6 +4,8 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useConfirm } from "../context/ConfirmContext";
+import { Printer } from "lucide-react";
+
 import {
   Loader,
   Check,
@@ -152,8 +154,11 @@ const OrderDetails = () => {
                     Cancel Order
                   </button>
                 )}
-                <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-bold shadow-sm">
-                  View Invoice
+                <button
+                  onClick={() => navigate(`/order/${order._id}/invoice`)}
+                  className="border border-gray-300 bg-white shadow-sm px-4 py-1.5 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <Printer size={16} /> Invoice
                 </button>
               </div>
             </div>

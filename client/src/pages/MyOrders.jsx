@@ -143,9 +143,12 @@ const MyOrders = () => {
                       View Order Details
                     </Link>
                     <span className="text-gray-300">|</span>
-                    <span className="text-blue-600 hover:underline cursor-pointer">
+                    <Link
+                      to={`/order/${order._id}/invoice`}
+                      className="text-blue-600 hover:underline cursor-pointer"
+                    >
                       Invoice
-                    </span>
+                    </Link>
                   </div>
                 </div>
               </div>

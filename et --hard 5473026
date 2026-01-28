@@ -1,0 +1,42 @@
+[33mdc27c79[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m added seller reviews
+[33m5473026[m bug fixed
+[33m8eb7247[m added warehouse delivery and shipping update support
+[33m09f5dd0[m added custom toast and confirm style
+[33mf31bb01[m added pagination support
+[33m8e64457[m added dynamic price home page and redesigned it
+[33m8ee92e0[m add buy now btn direct to product page
+[33mea441cf[m added admin dashboard
+[33m0141eea[m added amin delete concept
+[33m4da9f73[m added forget password section and logic
+[33me2b3b44[m added wishlist section and logic
+[33m9b3440a[m improved navbar for mobile
+[33mccd1d84[m profile logic fixed
+[33md49f6a2[m adding profile section
+[33m52e8382[m added delivery logic
+[33m96265c0[m navbar fixed
+[33m91f57bc[m improved the cancel logic
+[33m407f8a0[m fixed cart logic
+[33mdb35193[m few bugs fixed
+[33m71ce10b[m added sller support
+[33m3d6d9be[m added seller shop logic
+[33m0322b8a[m fixed btn logic
+[33mc30d335[m fixing seller btn
+[33m2a8ef65[m bug fixxing
+[33mac546e1[m added seller dashboard and updated controller
+[33m690afa1[m removed admin logic from whole codebase
+[33ma064145[m added seller marketplace
+[33m9859d8d[m otp bug fixed
+[33m997418f[m added nodemailer support
+[33m8106c90[m added razorpay
+[33mf6b5e17[m added cancel logic
+[33m5fe1af8[m changed the product pages
+[33m70d94fc[m upload bug fixed
+[33mb8f2e26[m bugs fixed
+[33m50550b4[m added cloudinary support
+[33m3a1181f[m removed gsap animation
+[33m8d66315[m added order logic and pages
+[33m71fac31[m added some pages and controllers
+[33mff6d9ff[m added pages to frontend and added some logic
+[33me2043cf[m ad model and route and controller for user and product
+[33m0e951a6[m a small setup
+[33m697c6cd[m Starting Shopkart

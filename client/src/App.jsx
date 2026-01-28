@@ -19,6 +19,7 @@ import UserEdit from "./pages/admin/UserEdit";
 import SellerProducts from "./pages/admin/SellerProducts";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import SearchPage from "./pages/SearchPage";
+import Invoice from "./pages/Invoice";
 
 // Seller Imports
 import SellerRoute from "./components/SellerRoute";
@@ -56,6 +57,7 @@ function App() {
               <Route path="/addresses" element={<SavedAddresses />} />
               <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/order/:id" element={<OrderDetails />} />
+              <Route path="/order/:id/invoice" element={<Invoice />} />
               <Route path="/shop/:id" element={<SellerShop />} />
 
               {/* Seller Registration */}
