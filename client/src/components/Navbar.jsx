@@ -21,6 +21,7 @@ const Navbar = () => {
 
   const [keyword, setKeyword] = useState(""); // Search state
 
+  console.log("Current User State:", user);
   const searchBarRef = useRef(null);
   const { contextSafe } = useGSAP();
 

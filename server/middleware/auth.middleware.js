@@ -3,7 +3,6 @@ import User from '../models/user.model.js';
 
 export const protect = async (req, res, next) => {
     let token;
-
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
@@ -11,21 +10,20 @@ export const protect = async (req, res, next) => {
             req.user = await User.findById(decoded.id).select('-password');
             next();
         } catch (error) {
-            console.error(error);
+            console.error("Token verification failed:", error);
             res.status(401).json({ message: 'Not authorized, token failed' });
         }
-    }
-
-    if (!token) {
+    } else {
         res.status(401).json({ message: 'Not authorized, no token' });
     }
 };
 
-// --- NEW: Seller Middleware ---
 export const seller = (req, res, next) => {
+    // LOGGING TO DEBUG 401 ERRORS
     if (req.user && (req.user.isSeller || req.user.isAdmin)) {
         next();
     } else {
+        console.log(`[AUTH FAIL] User: ${req.user?.name} | IsSeller: ${req.user?.isSeller}`);
         res.status(401).json({ message: 'Not authorized as a seller' });
     }
 };

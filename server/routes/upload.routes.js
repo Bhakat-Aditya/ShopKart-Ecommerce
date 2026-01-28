@@ -1,28 +1,16 @@
 import path from 'path';
 import express from 'express';
 import multer from 'multer';
-import { v2 as cloudinary } from 'cloudinary';
-import fs from 'fs'; 
-import dotenv from 'dotenv'; // <--- 1. Import dotenv
-
-dotenv.config(); // <--- 2. Load env vars IMMEDIATELY
+import { protect, seller } from '../middleware/auth.middleware.js'; // Removed 'admin'
 
 const router = express.Router();
 
-// 3. Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// 4. Configure Multer (Temporary Storage)
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    cb(null, 'uploads/'); 
+    cb(null, 'uploads/');
   },
   filename(req, file, cb) {
-    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+    cb(null, `image-${Date.now()}${path.extname(file.originalname)}`);
   },
 });
 
@@ -45,42 +33,9 @@ const upload = multer({
   },
 });
 
-// 5. Upload Route
-router.post('/', upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-        return res.status(400).send({ message: 'No file uploaded' });
-    }
-
-    // Upload to Cloudinary
-    const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'shopkart',
-    });
-    
-    // --- CRITICAL FIX: Delete local file after upload ---
-    try {
-        fs.unlinkSync(req.file.path); 
-    } catch (fsError) {
-        console.error("Failed to delete local file:", fsError);
-    }
-    // ---------------------------------------------------
-
-    res.send({
-      message: 'Image uploaded',
-      image: result.secure_url,
-    });
-  } catch (error) {
-    console.error("Cloudinary Error:", error); 
-    
-    // If it fails, delete the local file anyway
-    if (req.file && fs.existsSync(req.file.path)) {
-        try {
-            fs.unlinkSync(req.file.path);
-        } catch (ignored) {}
-    }
-
-    res.status(500).send({ message: 'Cloudinary Upload Failed' });
-  }
+// Allow Sellers to upload images
+router.post('/', protect, seller, upload.single('image'), (req, res) => {
+  res.send(`/${req.file.path.replace(/\\/g, "/")}`); // Fix for Windows paths
 });
 
 export default router;
