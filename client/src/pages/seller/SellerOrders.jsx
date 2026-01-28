@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -9,16 +9,15 @@ import {
   Package,
   CheckCircle,
   Truck,
-  XCircle,
-  Eye,
   Banknote,
   Warehouse, // Icon for Logistics
   Calendar,
   X,
-} from "lucide-react";
+} from "lucide-react"; // Removed Eye from imports
 
 const SellerOrders = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const toast = useToast();
   const confirm = useConfirm();
   const [orders, setOrders] = useState([]);
@@ -48,11 +47,9 @@ const SellerOrders = () => {
     if (user && user.isSeller) fetchOrders();
   }, [user]);
 
-  // Handle Opening Modal
   const openLogisticsModal = (order) => {
     setSelectedOrder(order);
     setStatus(order.orderStatus || "Processing");
-    // Format date for input type="date" (YYYY-MM-DD)
     if (order.expectedDelivery) {
       setDate(new Date(order.expectedDelivery).toISOString().split("T")[0]);
     } else {
@@ -60,7 +57,6 @@ const SellerOrders = () => {
     }
   };
 
-  // Handle Logistics Update
   const updateLogisticsHandler = async (e) => {
     e.preventDefault();
     setUpdateLoading(true);
@@ -72,8 +68,8 @@ const SellerOrders = () => {
         config,
       );
       toast.success("Logistics Updated Successfully");
-      setSelectedOrder(null); // Close modal
-      fetchOrders(); // Refresh data
+      setSelectedOrder(null);
+      fetchOrders();
     } catch (error) {
       toast.error("Failed to update status");
     } finally {
@@ -81,7 +77,6 @@ const SellerOrders = () => {
     }
   };
 
-  // --- MARK AS DELIVERED HANDLER ---
   const markDeliveredHandler = async (orderId) => {
     if (
       !(await confirm(
@@ -105,7 +100,6 @@ const SellerOrders = () => {
     }
   };
 
-  // --- NEW: MARK AS PAID HANDLER (For COD) ---
   const markPaidHandler = async (orderId) => {
     if (
       !(await confirm(
@@ -187,101 +181,119 @@ const SellerOrders = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {orders.map((order) => (
-                  <tr key={order._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-blue-600">
-                      #{order._id.substring(20, 24)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.user?.name || "Guest"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.createdAt.substring(0, 10)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                      ₹{order.totalPrice}
-                    </td>
+                {orders.map((order) => {
+                  // Lock button if order is delivered OR marked delivered manually
+                  const isOrderDelivered =
+                    order.isDelivered || order.orderStatus === "Delivered";
 
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-bold ${order.isPaid ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
-                      >
-                        {order.isPaid ? "Paid" : "Pending"}
-                      </span>
-                    </td>
+                  return (
+                    <tr key={order._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-blue-600">
+                        #{order._id.substring(20, 24)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.user?.name || "Guest"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {order.createdAt.substring(0, 10)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                        ₹{order.totalPrice}
+                      </td>
 
-                    {/* NEW: Logistics Status Column */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex items-center gap-2">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1
-                                ${
-                                  order.orderStatus === "Delivered"
-                                    ? "bg-green-100 text-green-800"
-                                    : order.orderStatus === "Out for Delivery"
-                                      ? "bg-yellow-100 text-yellow-800"
-                                      : "bg-blue-50 text-blue-600"
-                                }`}
+                          className={`px-2 py-1 rounded text-xs font-bold ${
+                            order.isPaid
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
                         >
-                          {order.orderStatus === "Delivered" ? (
-                            <CheckCircle size={12} />
-                          ) : (
-                            <Truck size={12} />
-                          )}
-                          {order.orderStatus || "Processing"}
+                          {order.isPaid ? "Paid" : "Pending"}
                         </span>
-                      </div>
-                      {order.expectedDelivery && !order.isDelivered && (
-                        <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                          <Calendar size={10} /> Exp:{" "}
-                          {new Date(
-                            order.expectedDelivery,
-                          ).toLocaleDateString()}
+                      </td>
+
+                      {/* Logistics Status */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1
+                                  ${
+                                    isOrderDelivered
+                                      ? "bg-green-100 text-green-800"
+                                      : order.orderStatus === "Out for Delivery"
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : "bg-blue-50 text-blue-600"
+                                  }`}
+                          >
+                            {isOrderDelivered ? (
+                              <CheckCircle size={12} />
+                            ) : (
+                              <Truck size={12} />
+                            )}
+                            {order.orderStatus || "Processing"}
+                          </span>
                         </div>
-                      )}
-                    </td>
+                        {order.expectedDelivery && !isOrderDelivered && (
+                          <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                            <Calendar size={10} /> Exp:{" "}
+                            {new Date(
+                              order.expectedDelivery,
+                            ).toLocaleDateString()}
+                          </div>
+                        )}
+                      </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end items-center gap-2">
-                      {/* WAREHOUSE BUTTON */}
-                      <button
-                        onClick={() => openLogisticsModal(order)}
-                        className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700 shadow-sm"
-                        title="Update Warehouse Status"
-                      >
-                        <Warehouse size={16} />
-                      </button>
+                      {/* Actions Column */}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end items-center gap-2">
+                          {/* WAREHOUSE BUTTON */}
+                          <button
+                            onClick={() => openLogisticsModal(order)}
+                            disabled={isOrderDelivered}
+                            className={`p-2 rounded shadow-sm transition-colors ${
+                              isOrderDelivered
+                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                : "bg-purple-600 text-white hover:bg-purple-700"
+                            }`}
+                            title={
+                              isOrderDelivered
+                                ? "Order Complete"
+                                : "Update Warehouse Status"
+                            }
+                          >
+                            <Warehouse size={16} />
+                          </button>
 
-                      {/* MARK PAID BUTTON */}
-                      {!order.isPaid && (
-                        <button
-                          onClick={() => markPaidHandler(order._id)}
-                          disabled={actionLoading === order._id}
-                          className="bg-green-600 text-white p-2 rounded hover:bg-green-700 shadow-sm disabled:opacity-50"
-                          title="Mark Paid"
-                        >
-                          {actionLoading === order._id ? (
-                            <Loader size={16} className="animate-spin" />
-                          ) : (
-                            <Banknote size={16} />
+                          {/* MARK PAID BUTTON */}
+                          {!order.isPaid && (
+                            <button
+                              onClick={() => markPaidHandler(order._id)}
+                              disabled={actionLoading === order._id}
+                              className="bg-green-600 text-white p-2 rounded hover:bg-green-700 shadow-sm disabled:opacity-50"
+                              title="Mark Paid"
+                            >
+                              {actionLoading === order._id ? (
+                                <Loader size={16} className="animate-spin" />
+                              ) : (
+                                <Banknote size={16} />
+                              )}
+                            </button>
                           )}
-                        </button>
-                      )}
 
-                      <Link
-                        to={`/order/${order._id}`}
-                        className="text-gray-500 hover:text-amazon-blue p-2 bg-gray-100 rounded"
-                        title="View Details"
-                      >
-                        <Eye size={16} />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                          {/* EYE BUTTON REMOVED */}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
+
+      {/* Logistics Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-scale-up">

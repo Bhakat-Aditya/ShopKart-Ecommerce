@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { Loader, Package, Search, ChevronRight } from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { useToast } from "../context/ToastContext";
+import { Loader, Package, Search } from "lucide-react";
 
 const MyOrders = () => {
   const { user } = useAuth();
+  const { addToCart } = useCart();
+  const toast = useToast();
+  const navigate = useNavigate();
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,6 +30,22 @@ const MyOrders = () => {
     };
     if (user) fetchOrders();
   }, [user]);
+
+  // Handle "Buy it again" logic
+  const handleBuyAgain = async (productId) => {
+    try {
+      const { data } = await axios.get(`/api/products/${productId}`);
+      if (data.countInStock > 0) {
+        addToCart(data, 1);
+        toast.success("Added to Cart");
+        navigate("/cart");
+      } else {
+        toast.error("Product is currently out of stock");
+      }
+    } catch (error) {
+      toast.error("Could not add product");
+    }
+  };
 
   if (loading)
     return (
@@ -46,7 +68,8 @@ const MyOrders = () => {
 
       <div className="flex justify-between items-end mb-6 border-b pb-4">
         <h1 className="text-3xl font-normal text-gray-800">Your Orders</h1>
-        {/* Fake Search Bar for aesthetics */}
+
+        {/* Search Orders (Visual Only) */}
         <div className="hidden md:flex items-center border border-gray-300 rounded overflow-hidden">
           <div className="bg-gray-100 px-2 py-2">
             <Search size={18} className="text-gray-500" />
@@ -80,7 +103,7 @@ const MyOrders = () => {
               key={order._id}
               className="border border-gray-300 rounded-lg bg-white overflow-hidden hover:shadow-sm transition-shadow"
             >
-              {/* --- ORDER HEADER (Grey Bar) --- */}
+              {/* --- ORDER HEADER --- */}
               <div className="bg-gray-100 p-4 flex flex-col md:flex-row justify-between text-sm text-gray-600 gap-4">
                 <div className="flex gap-8">
                   <div className="flex flex-col">
@@ -99,8 +122,8 @@ const MyOrders = () => {
                     <span className="uppercase text-xs font-bold">Ship To</span>
                     <span className="text-blue-600 group relative cursor-pointer hover:underline">
                       {user.name}
-                      {/* Tooltip Simulation */}
-                      <div className="hidden group-hover:block absolute top-6 left-0 bg-white border shadow-lg p-2 rounded w-48 z-10 text-gray-800">
+                      {/* Tooltip for Address */}
+                      <div className="hidden group-hover:block absolute top-6 left-0 bg-white border shadow-lg p-2 rounded w-48 z-10 text-gray-800 text-xs">
                         {order.shippingAddress.address},{" "}
                         {order.shippingAddress.city}
                       </div>
@@ -112,6 +135,7 @@ const MyOrders = () => {
                     Order # {order._id}
                   </span>
                   <div className="flex gap-4 mt-1">
+                    {/* Link to Order Details */}
                     <Link
                       to={`/order/${order._id}`}
                       className="text-blue-600 hover:underline"
@@ -131,7 +155,11 @@ const MyOrders = () => {
                 <h3 className="font-bold text-lg mb-4 text-gray-800">
                   {order.isDelivered
                     ? `Delivered ${order.deliveredAt?.substring(0, 10)}`
-                    : "Arriving Soon"}
+                    : order.orderStatus === "Shipped"
+                      ? "Shipped"
+                      : order.orderStatus === "Out for Delivery"
+                        ? "Out for Delivery"
+                        : "Arriving Soon"}
                 </h3>
 
                 <div className="flex flex-col md:flex-row justify-between gap-6">
@@ -139,11 +167,14 @@ const MyOrders = () => {
                   <div className="flex-1 space-y-4">
                     {order.orderItems.map((item, idx) => (
                       <div key={idx} className="flex gap-4 items-start">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-20 h-20 object-contain"
-                        />
+                        {/* Product Image Link */}
+                        <Link to={`/product/${item.product}`}>
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-20 h-20 object-contain border p-1 rounded"
+                          />
+                        </Link>
                         <div>
                           <Link
                             to={`/product/${item.product}`}
@@ -155,7 +186,12 @@ const MyOrders = () => {
                             Return window closed on{" "}
                             {new Date().toLocaleDateString()}
                           </p>
-                          <button className="bg-amazon-yellow text-sm px-3 py-1 rounded-lg mt-2 hover:bg-yellow-400 border border-yellow-500 shadow-sm">
+
+                          {/* Buy Again Button */}
+                          <button
+                            onClick={() => handleBuyAgain(item.product)}
+                            className="bg-amazon-yellow text-sm px-3 py-1 rounded-lg mt-2 hover:bg-yellow-400 border border-yellow-500 shadow-sm transition-colors"
+                          >
                             Buy it again
                           </button>
                         </div>
@@ -165,16 +201,18 @@ const MyOrders = () => {
 
                   {/* Action Buttons */}
                   <div className="md:w-64 flex flex-col gap-2">
-                    <Link
-                      to={`/order/${order._id}`}
-                      className="w-full bg-white border border-gray-300 py-1.5 rounded-lg text-sm text-center shadow-sm hover:bg-gray-50"
+                    {/* Track Package Button -> Goes to Order Details */}
+                    <button
+                      onClick={() => navigate(`/order/${order._id}`)}
+                      className="w-full bg-white border border-gray-300 py-1.5 rounded-lg text-sm text-center shadow-sm hover:bg-gray-50 font-medium"
                     >
                       Track Package
-                    </Link>
-                    <button className="w-full bg-white border border-gray-300 py-1.5 rounded-lg text-sm shadow-sm hover:bg-gray-50">
+                    </button>
+
+                    <button className="w-full bg-white border border-gray-300 py-1.5 rounded-lg text-sm shadow-sm hover:bg-gray-50 text-gray-400 cursor-not-allowed">
                       Write a product review
                     </button>
-                    <button className="w-full bg-white border border-gray-300 py-1.5 rounded-lg text-sm shadow-sm hover:bg-gray-50">
+                    <button className="w-full bg-white border border-gray-300 py-1.5 rounded-lg text-sm shadow-sm hover:bg-gray-50 text-gray-400 cursor-not-allowed">
                       Leave seller feedback
                     </button>
                   </div>
