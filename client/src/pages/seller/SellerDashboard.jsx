@@ -14,6 +14,7 @@ const SellerDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Added error state
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -22,8 +23,9 @@ const SellerDashboard = () => {
         const { data } = await axios.get("/api/seller/dashboard", config);
         setStats(data);
         setLoading(false);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load dashboard data. Please try again.");
         setLoading(false);
       }
     };
@@ -36,6 +38,23 @@ const SellerDashboard = () => {
         <Loader className="animate-spin" />
       </div>
     );
+
+  // --- FIX: Handle case where stats is null (e.g. API error) ---
+  if (error || !stats) {
+    return (
+      <div className="container mx-auto px-4 py-8 font-outfit text-center">
+        <h2 className="text-red-500 text-xl font-bold mb-4">
+          {error || "Something went wrong"}
+        </h2>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-amazon-yellow px-6 py-2 rounded-lg font-bold"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 font-outfit">
@@ -52,8 +71,9 @@ const SellerDashboard = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500">Total Earnings</p>
+            {/* Safe access using Optional Chaining (?.) just in case */}
             <h2 className="text-2xl font-bold">
-              ₹{stats.totalEarnings.toLocaleString()}
+              ₹{stats?.totalEarnings?.toLocaleString() || 0}
             </h2>
           </div>
         </div>
@@ -65,7 +85,7 @@ const SellerDashboard = () => {
           <div>
             <p className="text-sm text-gray-500">Inventory Value</p>
             <h2 className="text-2xl font-bold">
-              ₹{stats.futureProfit.toLocaleString()}
+              ₹{stats?.futureProfit?.toLocaleString() || 0}
             </h2>
           </div>
         </div>
@@ -76,7 +96,9 @@ const SellerDashboard = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500">Total Stock</p>
-            <h2 className="text-2xl font-bold">{stats.totalStock} units</h2>
+            <h2 className="text-2xl font-bold">
+              {stats?.totalStock || 0} units
+            </h2>
           </div>
         </div>
 
@@ -86,7 +108,7 @@ const SellerDashboard = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500">Products Listed</p>
-            <h2 className="text-2xl font-bold">{stats.productsCount}</h2>
+            <h2 className="text-2xl font-bold">{stats?.productsCount || 0}</h2>
           </div>
         </div>
       </div>
