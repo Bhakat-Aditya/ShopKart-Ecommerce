@@ -7,19 +7,19 @@ export const getProducts = async (req, res) => {
 
         let filter = { ...keyword, ...category, isPublished: true };
 
-        // --- NEW: Price Filter ---
+        // --- Price Filter ---
         if (req.query.minPrice || req.query.maxPrice) {
             filter.price = {};
             if (req.query.minPrice) filter.price.$gte = Number(req.query.minPrice);
             if (req.query.maxPrice) filter.price.$lte = Number(req.query.maxPrice);
         }
 
-        // --- NEW: Rating Filter ---
+        // --- Rating Filter ---
         if (req.query.minRating) {
             filter.rating = { $gte: Number(req.query.minRating) };
         }
 
-        // --- Discount Filter (Existing) ---
+        // --- Discount Filter ---
         if (req.query.minDiscount) {
             const minDisc = Number(req.query.minDiscount);
             filter = {
@@ -33,11 +33,12 @@ export const getProducts = async (req, res) => {
             };
         }
 
-        const pageSize = Number(req.query.limit) || 12; // Increased to 12 for grid view
+        const pageSize = Number(req.query.limit) || 12;
         const page = Number(req.query.pageNumber) || 1;
         const count = await Product.countDocuments(filter);
 
         const products = await Product.find(filter)
+            .populate('user', 'name email seller') // <--- CRITICAL FIX: Gets Seller Info
             .limit(pageSize)
             .skip(pageSize * (page - 1))
             .sort({ createdAt: -1 });
@@ -69,7 +70,10 @@ export const getMyProducts = async (req, res) => {
 
 export const getProductById = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id).populate('user', 'name seller');
+        const product = await Product.findById(req.params.id)
+            .populate('user', 'name email seller') // Populates seller
+            .populate('reviews.user', 'name');     // Populates reviewer names
+
         if (product) {
             res.json(product);
         } else {
@@ -82,13 +86,12 @@ export const getProductById = async (req, res) => {
 
 export const createProduct = async (req, res) => {
     try {
-        // FIXED: Using "Placeholder" text instead of empty strings to pass Mongoose Validation
         const product = new Product({
             name: 'New Product Name',
             price: 0,
             mrp: 0,
             user: req.user._id,
-            image: '/images/sample.jpg', // Valid placeholder path
+            image: '/images/sample.jpg',
             brand: 'Brand Name',
             category: 'Category',
             countInStock: 0,
@@ -99,7 +102,6 @@ export const createProduct = async (req, res) => {
         const createdProduct = await product.save();
         res.status(201).json(createdProduct);
     } catch (error) {
-        // Log the exact validation error for debugging
         console.error("Create Product Error:", error);
         res.status(500).json({ message: error.message });
     }
@@ -107,18 +109,17 @@ export const createProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
     try {
-        // Added 'mrp' to body destructuring
         const { name, price, mrp, description, image, brand, category, countInStock } = req.body;
         const product = await Product.findById(req.params.id);
 
         if (product) {
-            if (product.user.toString() !== req.user._id.toString()) {
+            if (product.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
                 return res.status(401).json({ message: "Not authorized to edit this product" });
             }
 
             product.name = name;
             product.price = price;
-            product.mrp = mrp; // Update MRP
+            product.mrp = mrp;
             product.description = description;
             product.image = image;
             product.brand = brand;
@@ -140,7 +141,6 @@ export const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
         if (product) {
-            // Allow if Owner OR Admin
             if (product.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
                 return res.status(401).json({ message: "Not authorized" });
             }
@@ -153,6 +153,7 @@ export const deleteProduct = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
 export const createProductReview = async (req, res) => {
     try {
         const { rating, comment } = req.body;
@@ -180,5 +181,15 @@ export const createProductReview = async (req, res) => {
         }
     } catch (error) {
         res.status(400).json({ message: error.message });
+    }
+};
+
+// --- THIS FUNCTION WAS MISSING ---
+export const getTopProducts = async (req, res) => {
+    try {
+        const products = await Product.find({}).sort({ rating: -1 }).limit(3);
+        res.json(products);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };
